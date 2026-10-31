@@ -6,6 +6,8 @@ Source snapshot: `e2609980eaa42f6b04556518113cc7d1b3f319e9` (published Sites ver
 
 This export includes the animated start screen, loading progress, eight town guards, camp rescues, and the latest water and healing effects. `build-info.json` records the source version and SHA-256 hashes of every game file.
 
+The Pages export adds version queries to application scripts and styles to prevent stale cached files mixing with a newer release. Game logic and assets match the source; the build record includes both source and packaged hashes.
+
 ## GitHub Pages
 
 Upload these files to the root of a repository's `main` branch. Keep `index.html`, `.nojekyll`, the JavaScript/WASM files and `assets/` together, preserving their names and folder structure.

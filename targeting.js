@@ -1,4 +1,4 @@
-import {enemyProfile} from './enemy-profile.js';
+import {enemyProfile} from './enemy-profile.js?v=e2609980';
 // Existing attack ranges already include contact with ordinary creatures. Only
 // the extra footprint of a larger guardian or boss extends that reach.
 export function enemyDistance(enemy,position){

@@ -1,5 +1,5 @@
-import {newQuestState,normalizeQuestState} from './quests.js';
-import {normalizeTreeStyle} from './tree-style-options.js';
+import {newQuestState,normalizeQuestState} from './quests.js?v=e2609980';
+import {normalizeTreeStyle} from './tree-style-options.js?v=e2609980';
 
 export const SAVE_KEY='emberwild-save-v1';
 export const CLASSES={

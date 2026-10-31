@@ -1,4 +1,4 @@
-import {createCombatVisuals} from './combat-visuals.js';
+import {createCombatVisuals} from './combat-visuals.js?v=e2609980';
 
 export const GUARD_REACH=3.5;
 export const GUARD_POSTS=Object.freeze([
