@@ -1,0 +1,444 @@
+{
+  "image": "round-heroes.png",
+  "width": 2048,
+  "height": 768,
+  "columns": 8,
+  "rows": 3,
+  "cellWidth": 256,
+  "cellHeight": 256,
+  "directionOrder": [
+    "front",
+    "front-right",
+    "right",
+    "back-right",
+    "back",
+    "back-left",
+    "left",
+    "front-left"
+  ],
+  "classOrder": [
+    "knight",
+    "mage",
+    "ranger"
+  ],
+  "sampling": "nearest",
+  "alphaTestCutoff": 0.5,
+  "coordinates": "Top-left origin. Use cells for uniform registration; tightRect is alpha>128 bounding box [x,y,w,h].",
+  "notes": "Generated using built-in imagegen, then tool-edited to correct profile directions and introduce hard stepped pixel cel shading. Rear three views have no face. No procedural character drawing or pixel editing.",
+  "frames": {
+    "knight": [
+      {
+        "direction": "front",
+        "column": 0,
+        "cell": [
+          0,
+          0,
+          256,
+          256
+        ],
+        "tightRect": [
+          16,
+          15,
+          224,
+          221
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "front-right",
+        "column": 1,
+        "cell": [
+          256,
+          0,
+          256,
+          256
+        ],
+        "tightRect": [
+          282,
+          15,
+          208,
+          223
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "right",
+        "column": 2,
+        "cell": [
+          512,
+          0,
+          256,
+          256
+        ],
+        "tightRect": [
+          518,
+          15,
+          213,
+          224
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "back-right",
+        "column": 3,
+        "cell": [
+          768,
+          0,
+          256,
+          256
+        ],
+        "tightRect": [
+          792,
+          15,
+          213,
+          222
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "back",
+        "column": 4,
+        "cell": [
+          1024,
+          0,
+          256,
+          256
+        ],
+        "tightRect": [
+          1039,
+          15,
+          226,
+          221
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "back-left",
+        "column": 5,
+        "cell": [
+          1280,
+          0,
+          256,
+          256
+        ],
+        "tightRect": [
+          1297,
+          15,
+          212,
+          224
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "left",
+        "column": 6,
+        "cell": [
+          1536,
+          0,
+          256,
+          256
+        ],
+        "tightRect": [
+          1572,
+          15,
+          214,
+          223
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "front-left",
+        "column": 7,
+        "cell": [
+          1792,
+          0,
+          256,
+          256
+        ],
+        "tightRect": [
+          1813,
+          15,
+          210,
+          222
+        ],
+        "alphaThreshold": 128
+      }
+    ],
+    "mage": [
+      {
+        "direction": "front",
+        "column": 0,
+        "cell": [
+          0,
+          256,
+          256,
+          256
+        ],
+        "tightRect": [
+          13,
+          258,
+          238,
+          233
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "front-right",
+        "column": 1,
+        "cell": [
+          256,
+          256,
+          256,
+          256
+        ],
+        "tightRect": [
+          263,
+          263,
+          249,
+          231
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "right",
+        "column": 2,
+        "cell": [
+          512,
+          256,
+          256,
+          256
+        ],
+        "tightRect": [
+          512,
+          263,
+          252,
+          231
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "back-right",
+        "column": 3,
+        "cell": [
+          768,
+          256,
+          256,
+          256
+        ],
+        "tightRect": [
+          788,
+          260,
+          221,
+          233
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "back",
+        "column": 4,
+        "cell": [
+          1024,
+          256,
+          256,
+          256
+        ],
+        "tightRect": [
+          1040,
+          263,
+          222,
+          229
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "back-left",
+        "column": 5,
+        "cell": [
+          1280,
+          256,
+          256,
+          256
+        ],
+        "tightRect": [
+          1294,
+          262,
+          222,
+          231
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "left",
+        "column": 6,
+        "cell": [
+          1536,
+          256,
+          256,
+          256
+        ],
+        "tightRect": [
+          1537,
+          262,
+          249,
+          231
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "front-left",
+        "column": 7,
+        "cell": [
+          1792,
+          256,
+          256,
+          256
+        ],
+        "tightRect": [
+          1796,
+          261,
+          244,
+          231
+        ],
+        "alphaThreshold": 128
+      }
+    ],
+    "ranger": [
+      {
+        "direction": "front",
+        "column": 0,
+        "cell": [
+          0,
+          512,
+          256,
+          256
+        ],
+        "tightRect": [
+          18,
+          517,
+          221,
+          231
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "front-right",
+        "column": 1,
+        "cell": [
+          256,
+          512,
+          256,
+          256
+        ],
+        "tightRect": [
+          268,
+          517,
+          231,
+          232
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "right",
+        "column": 2,
+        "cell": [
+          512,
+          512,
+          256,
+          256
+        ],
+        "tightRect": [
+          529,
+          517,
+          220,
+          232
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "back-right",
+        "column": 3,
+        "cell": [
+          768,
+          512,
+          256,
+          256
+        ],
+        "tightRect": [
+          792,
+          517,
+          214,
+          231
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "back",
+        "column": 4,
+        "cell": [
+          1024,
+          512,
+          256,
+          256
+        ],
+        "tightRect": [
+          1035,
+          517,
+          232,
+          231
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "back-left",
+        "column": 5,
+        "cell": [
+          1280,
+          512,
+          256,
+          256
+        ],
+        "tightRect": [
+          1297,
+          517,
+          212,
+          231
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "left",
+        "column": 6,
+        "cell": [
+          1536,
+          512,
+          256,
+          256
+        ],
+        "tightRect": [
+          1557,
+          517,
+          219,
+          232
+        ],
+        "alphaThreshold": 128
+      },
+      {
+        "direction": "front-left",
+        "column": 7,
+        "cell": [
+          1792,
+          512,
+          256,
+          256
+        ],
+        "tightRect": [
+          1804,
+          517,
+          231,
+          232
+        ],
+        "alphaThreshold": 128
+      }
+    ]
+  }
+}

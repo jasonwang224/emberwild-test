@@ -1,0 +1,315 @@
+{
+  "image": "elder-directions.png",
+  "width": 2048,
+  "height": 768,
+  "columns": 8,
+  "rows": 3,
+  "cellWidth": 256,
+  "cellHeight": 256,
+  "alphaThreshold": 127,
+  "directionOrder": [
+    "front",
+    "front-right",
+    "right",
+    "back-right",
+    "back",
+    "back-left",
+    "left",
+    "front-left"
+  ],
+  "poseOrder": [
+    "grounded",
+    "airborne",
+    "landing"
+  ],
+  "frames": [
+    {
+      "column": 0,
+      "row": 0,
+      "direction": "front",
+      "pose": "grounded",
+      "tightRect": [
+        36,
+        35,
+        211,
+        207
+      ]
+    },
+    {
+      "column": 1,
+      "row": 0,
+      "direction": "front-right",
+      "pose": "grounded",
+      "tightRect": [
+        290,
+        35,
+        211,
+        209
+      ]
+    },
+    {
+      "column": 2,
+      "row": 0,
+      "direction": "right",
+      "pose": "grounded",
+      "tightRect": [
+        546,
+        39,
+        192,
+        205
+      ]
+    },
+    {
+      "column": 3,
+      "row": 0,
+      "direction": "back-right",
+      "pose": "grounded",
+      "tightRect": [
+        800,
+        39,
+        204,
+        204
+      ]
+    },
+    {
+      "column": 4,
+      "row": 0,
+      "direction": "back",
+      "pose": "grounded",
+      "tightRect": [
+        1059,
+        39,
+        205,
+        204
+      ]
+    },
+    {
+      "column": 5,
+      "row": 0,
+      "direction": "back-left",
+      "pose": "grounded",
+      "tightRect": [
+        1304,
+        39,
+        205,
+        203
+      ]
+    },
+    {
+      "column": 6,
+      "row": 0,
+      "direction": "left",
+      "pose": "grounded",
+      "tightRect": [
+        1551,
+        36,
+        194,
+        208
+      ]
+    },
+    {
+      "column": 7,
+      "row": 0,
+      "direction": "front-left",
+      "pose": "grounded",
+      "tightRect": [
+        1806,
+        35,
+        208,
+        208
+      ]
+    },
+    {
+      "column": 0,
+      "row": 1,
+      "direction": "front",
+      "pose": "airborne",
+      "tightRect": [
+        41,
+        274,
+        203,
+        216
+      ]
+    },
+    {
+      "column": 1,
+      "row": 1,
+      "direction": "front-right",
+      "pose": "airborne",
+      "tightRect": [
+        293,
+        274,
+        210,
+        217
+      ]
+    },
+    {
+      "column": 2,
+      "row": 1,
+      "direction": "right",
+      "pose": "airborne",
+      "tightRect": [
+        547,
+        274,
+        189,
+        217
+      ]
+    },
+    {
+      "column": 3,
+      "row": 1,
+      "direction": "back-right",
+      "pose": "airborne",
+      "tightRect": [
+        802,
+        275,
+        202,
+        218
+      ]
+    },
+    {
+      "column": 4,
+      "row": 1,
+      "direction": "back",
+      "pose": "airborne",
+      "tightRect": [
+        1059,
+        277,
+        205,
+        216
+      ]
+    },
+    {
+      "column": 5,
+      "row": 1,
+      "direction": "back-left",
+      "pose": "airborne",
+      "tightRect": [
+        1305,
+        275,
+        204,
+        217
+      ]
+    },
+    {
+      "column": 6,
+      "row": 1,
+      "direction": "left",
+      "pose": "airborne",
+      "tightRect": [
+        1555,
+        274,
+        190,
+        218
+      ]
+    },
+    {
+      "column": 7,
+      "row": 1,
+      "direction": "front-left",
+      "pose": "airborne",
+      "tightRect": [
+        1806,
+        274,
+        204,
+        216
+      ]
+    },
+    {
+      "column": 0,
+      "row": 2,
+      "direction": "front",
+      "pose": "landing",
+      "tightRect": [
+        24,
+        557,
+        227,
+        174
+      ]
+    },
+    {
+      "column": 1,
+      "row": 2,
+      "direction": "front-right",
+      "pose": "landing",
+      "tightRect": [
+        281,
+        557,
+        217,
+        174
+      ]
+    },
+    {
+      "column": 2,
+      "row": 2,
+      "direction": "right",
+      "pose": "landing",
+      "tightRect": [
+        526,
+        564,
+        212,
+        166
+      ]
+    },
+    {
+      "column": 3,
+      "row": 2,
+      "direction": "back-right",
+      "pose": "landing",
+      "tightRect": [
+        798,
+        570,
+        221,
+        158
+      ]
+    },
+    {
+      "column": 4,
+      "row": 2,
+      "direction": "back",
+      "pose": "landing",
+      "tightRect": [
+        1047,
+        575,
+        223,
+        153
+      ]
+    },
+    {
+      "column": 5,
+      "row": 2,
+      "direction": "back-left",
+      "pose": "landing",
+      "tightRect": [
+        1302,
+        570,
+        212,
+        158
+      ]
+    },
+    {
+      "column": 6,
+      "row": 2,
+      "direction": "left",
+      "pose": "landing",
+      "tightRect": [
+        1561,
+        566,
+        192,
+        165
+      ]
+    },
+    {
+      "column": 7,
+      "row": 2,
+      "direction": "front-left",
+      "pose": "landing",
+      "tightRect": [
+        1805,
+        557,
+        220,
+        174
+      ]
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Emberwild · The Hollow King</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#25243a;color:#f8e6c5;font:15px Georgia,serif}canvas{display:block;width:100vw;height:100vh;touch-action:none}header{position:absolute;left:28px;top:24px;pointer-events:none;text-shadow:0 2px 12px #151326}small{font:700 10px system-ui;letter-spacing:.24em;color:#d6b37a}h1{font-weight:normal;font-size:36px;margin:8px 0}p{margin:5px 0;line-height:1.6;color:#e4d7c4}.status{position:absolute;right:26px;top:26px;text-align:right;font:12px system-ui;line-height:1.7;color:#d8c8b2}.caption{position:absolute;left:28px;bottom:120px;max-width:270px;background:#211d30e8;border:1px solid #a4866555;padding:17px 20px;border-radius:10px}.caption strong{font-size:20px;font-weight:normal;display:block;margin:7px 0}.caption p{font-size:12px}nav{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:8px;padding:12px;justify-content:center;flex-wrap:wrap;width:max-content;max-width:95vw;background:#201d2ef2;border:1px solid #b7946655;border-radius:12px}button,a{font:600 12px system-ui;padding:11px 14px;border-radius:5px;border:1px solid #a58c7266;color:#f8e6c5;background:#393144;text-decoration:none;cursor:pointer}button:hover,a:hover{background:#514053}button[aria-pressed=true]{color:#2d2333;background:#e9bd76}button:focus-visible,a:focus-visible{outline:3px solid #efcc89;outline-offset:2px}@media(max-width:700px){header{left:16px;top:16px}h1{font-size:27px}header p{font-size:12px;max-width:250px}.status{top:125px;right:16px;max-width:160px}.caption{left:16px;bottom:180px;max-width:215px;padding:11px 15px}nav{bottom:12px;width:95vw}button,a{font-size:11px;padding:9px}}
+</style>
+<canvas id="stage" aria-label="Rotatable boss scale and animation preview"></canvas>
+<header><small>EMBERWILD · THE HOLLOW SANCTUM</small><h1>A crown grown cruel.</h1><p>The Hollow King towers over a little hero.<br>Drag to orbit · Scroll to look closer.</p></header>
+<div class="status" id="status" role="status">Opening the sanctum…</div>
+<aside class="caption"><small id="state">THE HOLLOW KING</small><strong id="pose">A heavy presence.</strong><p>Broader shoulders. A darker stare.<br>Slow, weighty strides and a planted attack windup.</p></aside>
+<nav aria-label="Boss preview controls"><button id="kind">Show guardian</button><button id="stride" aria-pressed="false">Heavy strides</button><button id="charge">Attack windup</button><button id="rage" aria-pressed="false">Enrage</button><button id="turn">Turn boss ↻</button><button id="orbit">Orbit view ↻</button><button id="pause" aria-pressed="false">Pause</button><a href="./">Back to adventure</a></nav>
+<script src="./babylon.js"></script><script type="module">
+import {enableRightDragOrbit} from './camera-controls.js';
+import {createRenderer} from './renderer.js';
+import {createSpriteLibrary} from './sprites.js';
+import {createWorld} from './world.js';
+import {createWorldLighting,setWorldLighting} from './lighting.js';
+import {applyCelShading} from './cel.js';
+import {enemyProfile} from './enemy-profile.js';
+import {createBossPresence} from './boss-presence.js';
+const B=BABYLON,V=B.Vector3,$=s=>document.querySelector(s),canvas=$('#stage');
+let engine,scene,camera,world,sprites,hero,enemy,shadow,sun,time=0,paused=false,moving=false,enraged=false,windup=0,direction=0,kind='boss';
+const facing=new V(0,0,-1),heroFacing=new V(0,0,-1);
+function footShadow(parent,radius){
+ const mesh=B.MeshBuilder.CreateDisc('actor foot shadow',{radius,tessellation:32,sideOrientation:B.Mesh.DOUBLESIDE},scene);
+ const material=new B.StandardMaterial('grounding ink',scene);material.disableLighting=true;material.emissiveColor=B.Color3.FromHexString('#151329');material.alpha=.4;material.backFaceCulling=false;
+ mesh.parent=parent;mesh.rotation.x=Math.PI/2;mesh.position.y=.025;mesh.material=material;mesh.isPickable=false;mesh.onDisposeObservable.add(()=>material.dispose());return mesh;
+}
+function showEnemy(){
+ enemy?.root.dispose();const profile=enemyProfile(kind),root=new B.TransformNode('boss study actor',scene);root.position.set(0,0,22);
+ const mesh=sprites.createCreature(kind,root,profile.spriteHeight),halo=footShadow(root,profile.shadowRadius);
+ enemy={root,mesh,halo,presence:createBossPresence(B,scene,root,{kind,radius:profile.shadowRadius})};
+ windup=0;$('#kind').textContent=kind==='boss'?'Show guardian':'Show Hollow King';$('#state').textContent=kind==='boss'?'THE HOLLOW KING':'MOSS GUARDIAN';$('#pose').textContent='A heavy presence.';
+ camera.target.set(-.3,1.8,20.8);camera.radius=23;camera.beta=.94;
+}
+try{
+ const renderer=await createRenderer(B,canvas,{gpuAvailable:!!navigator.gpu,location});
+ if(renderer){
+  engine=renderer.engine;engine.setHardwareScalingLevel(Math.max(1,devicePixelRatio/1.4));scene=new B.Scene(engine);scene.fogMode=B.Scene.FOGMODE_EXP2;
+  ({sun,shadow}=createWorldLighting(B,scene));setWorldLighting(B,scene,sun,'dungeon');sun.position.set(-36,40,-5.2);
+  camera=new B.ArcRotateCamera('sanctum camera',-Math.PI/2-.36,.94,23,new V(-.3,1.8,20.8),scene);camera.minZ=.2;camera.maxZ=180;camera.fov=.72;camera.lowerRadiusLimit=14;camera.upperRadiusLimit=40;camera.lowerBetaLimit=.4;camera.upperBetaLimit=1.15;camera.wheelDeltaPercentage=.02;camera.panningSensibility=0;camera.attachControl(canvas,true);enableRightDragOrbit(camera);camera.inputs.removeByType('ArcRotateCameraKeyboardMoveInput');
+  scene.imageProcessingConfiguration.contrast=1.05;scene.imageProcessingConfiguration.exposure=1.03;const glow=new B.GlowLayer('sanctum glow',scene,{blurKernelSize:24});glow.intensity=.25;
+  world=createWorld(B,scene,{zone:'dungeon',spriteVillagers:true});for(const mesh of world.shadowCasters)shadow.addShadowCaster(mesh);applyCelShading(B,scene);
+  sprites=await createSpriteLibrary(B,scene);const heroRoot=new B.TransformNode('hero comparison',scene);heroRoot.position.set(-3.4,0,18);hero={root:heroRoot,mesh:sprites.createHero('knight',heroRoot,2.35),halo:footShadow(heroRoot,.64)};showEnemy();
+  $('#status').textContent=renderer.backend+' · Live game sizes\nYour adventure save stays untouched.';
+  $('#kind').onclick=()=>{kind=kind==='boss'?'golem':'boss';showEnemy();};
+  $('#stride').onclick=e=>{moving=!moving;e.target.setAttribute('aria-pressed',String(moving));e.target.textContent=moving?'Stop strides':'Heavy strides';};
+  $('#charge').onclick=()=>{windup=1.1;$('#pose').textContent='Bracing for the blow…';};
+  $('#rage').onclick=e=>{enraged=!enraged;e.target.setAttribute('aria-pressed',String(enraged));e.target.textContent=enraged?'Enraged':'Enrage';};
+  $('#turn').onclick=()=>{direction=(direction+1)%8;facing.set(Math.sin(direction*Math.PI/4),0,-Math.cos(direction*Math.PI/4));};
+  $('#orbit').onclick=()=>camera.alpha+=Math.PI/4;
+  $('#pause').onclick=e=>{paused=!paused;e.target.setAttribute('aria-pressed',String(paused));e.target.textContent=paused?'Resume':'Pause';};
+  engine.runRenderLoop(()=>{
+   const dt=Math.min(.04,engine.getDeltaTime()/1000);
+   if(!paused){
+    time+=dt;world.update(dt,time);windup=Math.max(0,windup-dt);
+    const motion=sprites.animate(enemy.mesh,dt,{moving,windup});enemy.halo.scaling.setAll(1-motion.hop*.4);enemy.presence.update(dt,{windup,enraged});
+    const h=sprites.animate(hero.mesh,dt,{moving:false});hero.mesh.position.y=2.35*.45+h.hop;hero.mesh.scaling.set(h.sx,h.sy,1);
+    if(!windup)$('#pose').textContent=motion.landed?'A weighty landing.':enraged?'An ancient fury awakens.':moving?'Every step has weight.':'A heavy presence.';
+   }
+   sprites.face(enemy.mesh,facing,camera.alpha);sprites.face(hero.mesh,heroFacing,camera.alpha);scene.render();
+  });
+ }
+}catch(error){console.error(error);$('#status').textContent='The sanctum could not open: '+error.message;}
+window.addEventListener('resize',()=>engine?.resize());window.addEventListener('beforeunload',()=>{enemy?.root.dispose();hero?.root.dispose();sprites?.dispose();world?.dispose();scene?.dispose();engine?.dispose();});
+</script></html>

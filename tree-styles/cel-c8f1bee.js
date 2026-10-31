@@ -1,0 +1,72 @@
+/* Four-band diffuse lighting for authored world geometry.
+ * Checked against the GLSL and WGSL StandardMaterial sources in babylon.js.
+ * Install after createWorld; repeat after changing zones. Idempotent per material.
+ */
+const NAME = 'EmberwildHistoricalCel_c8f1bee';
+
+// StandardMaterial has no named AFTER_LIGHTS hook. This exact, shared anchor
+// occurs once after all light/shadow contributions and before color composition.
+// Babylon's documented regex injection keeps the match through $0.
+const AFTER_LIGHTS = '!aggShadow\\s*=\\s*aggShadow\\s*/\\s*numLights\\s*;';
+
+const GLSL = `$0
+// Quantize irradiance, never the albedo texture or final framebuffer color.
+float ewCelLuma = dot(max(diffuseBase, vec3(0.0)), vec3(0.2126, 0.7152, 0.0722));
+if (ewCelLuma > 0.0001) {
+    float ewCelBand = 0.28;
+    if (ewCelLuma >= 1.00) { ewCelBand = 1.17; }
+    else if (ewCelLuma >= 0.70) { ewCelBand = 0.85; }
+    else if (ewCelLuma >= 0.40) { ewCelBand = 0.55; }
+    // Keep genuinely unlit surfaces dark, rather than introducing ambient light.
+    ewCelBand *= min(ewCelLuma / 0.16, 1.0);
+    diffuseBase *= ewCelBand / ewCelLuma;
+}
+`;
+
+const WGSL = `$0
+// Same irradiance bands as GLSL; ordinary WGSL local variables only.
+let ewCelLuma: f32 = dot(max(diffuseBase, vec3f(0.0)), vec3f(0.2126, 0.7152, 0.0722));
+if (ewCelLuma > 0.0001) {
+    var ewCelBand: f32 = 0.28;
+    if (ewCelLuma >= 1.00) { ewCelBand = 1.17; }
+    else if (ewCelLuma >= 0.70) { ewCelBand = 0.85; }
+    else if (ewCelLuma >= 0.40) { ewCelBand = 0.55; }
+    ewCelBand *= min(ewCelLuma / 0.16, 1.0);
+    diffuseBase *= ewCelBand / ewCelLuma;
+}
+`;
+
+/**
+ * Apply four-band cel shading to opaque, lit world-* StandardMaterials.
+ * Returns the number newly installed. Transparent water/contact effects and
+ * unlit sprite materials keep their own rendering. No new textures or uniforms.
+ */
+export function applyCelShading(B, scene) {
+    if (!B?.MaterialPluginBase || !scene) return 0;
+
+    class CelLightingPlugin extends B.MaterialPluginBase {
+        constructor(material) {
+            super(material, NAME, 180, {}, true, true);
+            this.doNotSerialize = true;
+        }
+        getClassName() { return NAME; }
+        isCompatible(language) {
+            return language === B.ShaderLanguage.GLSL || language === B.ShaderLanguage.WGSL;
+        }
+        getCustomCode(shaderType, language = B.ShaderLanguage.GLSL) {
+            if (shaderType !== 'fragment') return null;
+            return { [AFTER_LIGHTS]: language === B.ShaderLanguage.WGSL ? WGSL : GLSL };
+        }
+    }
+
+    let installed = 0;
+    for (const material of scene.materials) {
+        if (!(material instanceof B.StandardMaterial) || !material.name.startsWith('world-')) continue;
+        if (material.disableLighting || material.alpha < 1 || material.metadata?.emberwildCel === false) continue;
+        if (material.pluginManager?.getPlugin(NAME)) continue;
+        new CelLightingPlugin(material);
+        material.markAsDirty(B.Material.AllDirtyFlag);
+        installed++;
+    }
+    return installed;
+}

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Emberwild · WebGPU check</title>
+<style>html{color-scheme:dark}body{margin:0;background:#102c29;color:#f0edda;font:16px/1.5 system-ui}main{max-width:920px;margin:auto;padding:28px}h1{font-size:30px;margin:8px 0}a{color:#eacb7a}canvas{display:block;width:100%;height:360px;border-radius:18px;background:#163c36;margin:22px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#091e1b;padding:18px;border-radius:12px;font-size:13px}.status{font-size:20px;color:#dfc88d}small{color:#bdcabe}button{padding:12px 18px;background:#d6ba70;color:#142723;border:0;border-radius:8px;font-weight:700;cursor:pointer}</style></head>
+<body><main><a href="./?renderer=webgpu">← Play with WebGPU</a><h1>WebGPU rendering check</h1><p>This checks the same Babylon engine used by Emberwild. It does not change your save or browser settings.</p><p class="status" id="status" role="status">Starting WebGPU…</p><canvas id="canvas" aria-label="Rotating cel-shaded shapes rendered with WebGPU"></canvas><button id="copy">Copy diagnostic report</button> <a href="./?renderer=webgl">Play with WebGL</a><pre id="report"></pre><small>The report stays in this browser unless you choose to copy and share it.</small></main><script src="./babylon.js"></script><script type="module">
+import {readRendererDiagnostic} from './renderer.js';
+import {applyCelShading} from './cel.js';
+const report=document.querySelector('#report'),status=document.querySelector('#status'),canvas=document.querySelector('canvas');
+const data={browser:navigator.userAgent,babylon:BABYLON.Engine.Version,secureContext:isSecureContext,webgpuAPI:!!navigator.gpu,previousStartupFailure:readRendererDiagnostic(),result:'starting',errors:[]};
+const show=()=>report.textContent=JSON.stringify(data,null,2);
+show();document.querySelector('#copy').onclick=async()=>{try{await navigator.clipboard.writeText(report.textContent);document.querySelector('#copy').textContent='Copied';}catch{document.querySelector('#copy').textContent='Select and copy the report below';}};
+let engine,scene,timeout;
+function fail(error){data.result='failed';data.errors.push({name:error?.name||'Error',message:String(error?.message??error)});status.textContent='WebGPU could not complete this check.';show();}
+try{
+ if(!navigator.gpu)throw Error('This browser has not exposed the WebGPU API.');
+ engine=new BABYLON.WebGPUEngine(canvas,{antialias:true});await engine.initAsync();
+ data.result='initialized';data.externalVideoTextures=typeof engine._device.importExternalTexture==='function';data.enabledFeatures=[...engine.enabledExtensions];
+ engine._device.addEventListener('uncapturederror',event=>fail(event.error));
+ scene=new BABYLON.Scene(engine);scene.clearColor=BABYLON.Color4.FromHexString('#163c36ff');
+ const camera=new BABYLON.ArcRotateCamera('camera',-.8,1.05,10,BABYLON.Vector3.Zero(),scene);camera.attachControl(canvas,true);
+ new BABYLON.HemisphericLight('sky',new BABYLON.Vector3(.3,1,-.4),scene);
+ const material=new BABYLON.StandardMaterial('world-test',scene);material.diffuseColor=BABYLON.Color3.FromHexString('#8fbe70');material.specularColor=BABYLON.Color3.Black();
+ const box=BABYLON.MeshBuilder.CreateBox('box',{size:2},scene);box.position.x=-1.5;box.material=material;
+ const sphere=BABYLON.MeshBuilder.CreateSphere('sphere',{diameter:2.5,segments:12},scene);sphere.position.x=1.5;sphere.material=material;
+ applyCelShading(BABYLON,scene);let frames=0;
+ timeout=setTimeout(()=>{if(frames<3&&data.result!=='failed')fail(Error('The renderer initialized but shaders did not become ready within 20 seconds.'));},20000);
+ engine.runRenderLoop(()=>{try{if(!scene.isReady())return;box.rotation.y+=.009;scene.render();if(++frames===3){clearTimeout(timeout);if(!data.errors.length){data.result='rendering';status.textContent='WebGPU is working: the cel-shaded scene is rendering.';show();}}}catch(error){engine.stopRenderLoop();fail(error);}});
+ show();window.addEventListener('resize',()=>engine.resize());
+}catch(error){clearTimeout(timeout);fail(error);try{engine?.dispose();}catch{}}
+</script></body></html>

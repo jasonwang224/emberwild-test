@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Emberwild · The training clearing</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#263e35;color:#fff4d7;font:16px Georgia,serif}canvas{display:block;width:100vw;height:100vh;touch-action:none}header{position:absolute;top:28px;left:32px;max-width:430px;pointer-events:none;text-shadow:0 2px 12px #19332a}small{font:700 11px system-ui;letter-spacing:.22em;color:#d6dbaf}h1{font-size:37px;font-weight:normal;margin:8px 0}p{font-size:15px;line-height:1.6;margin:8px 0;color:#dae1c8}.backend{position:absolute;right:30px;top:30px;max-width:350px;text-align:right;font:12px system-ui;line-height:1.7;color:#dae1c8}aside{position:absolute;left:32px;bottom:210px;width:255px;padding:19px 21px;background:#203b30e8;border:1px solid #c1cd8d55;border-radius:14px}aside strong{display:block;font-weight:normal;font-size:21px;margin:7px 0}aside p{font-size:13px}.bar{height:4px;background:#61755b;border-radius:4px;overflow:hidden;margin-top:13px}.bar div{height:100%;background:#e8cf83;width:0;transition:width .04s linear}.controls{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);width:1000px;max-width:calc(100vw - 28px);padding:13px;background:#213c32f5;border:1px solid #d8cc9666;border-radius:16px;box-shadow:0 8px 35px #10271f66}.row{display:flex;gap:7px;justify-content:center;flex-wrap:wrap}.row+.row{margin-top:10px;padding-top:10px;border-top:1px solid #b9caad33}button,a{font:600 13px system-ui;border:1px solid #a4b18a77;border-radius:8px;background:#365445;color:#f6ebc8;padding:9px 13px;text-decoration:none;cursor:pointer}button:hover,a:hover{background:#4b6954}button[aria-pressed=true]{background:#e7ce8e;border-color:#f4dda7;color:#243b2c}.primary{background:#e7ce8e;color:#243b2c;border-color:#f4dda7}button:focus-visible,a:focus-visible{outline:3px solid #b6e3df;outline-offset:3px}button:disabled{opacity:.5;cursor:wait}.hint{position:absolute;right:30px;bottom:217px;font:12px system-ui;color:#dae1c8;text-align:right;line-height:1.8}@media(max-width:720px){header{top:17px;left:18px;max-width:270px}h1{font-size:27px}header p{font-size:12px}.backend{top:20px;right:15px;max-width:120px;font-size:10px}aside{left:16px;bottom:260px;width:195px;padding:12px}.hint{display:none}.controls{bottom:12px;padding:10px}button,a{font-size:11px;padding:8px 10px}}
+</style>
+<canvas id="stage" aria-label="Rotatable 3D character and weapon animation preview"></canvas>
+<header><small>EMBERWILD · CHARACTER STUDY</small><h1>The training clearing.</h1><p>Six special moves. One little hero.<br>Try Q and F, then freeze or slow the action.</p></header>
+<div class="backend" id="backend" role="status">Preparing the clearing…</div>
+<aside><small id="class-label">WARRIOR · SUNSTEEL</small><strong id="phase" aria-live="polite">Ready when you are.</strong><p id="detail">A small sword and shield. A full arm sweep, with a bright crescent at impact.</p><div class="bar"><div id="progress"></div></div></aside>
+<div class="hint">Drag to orbit · Scroll to zoom<br>Space to attack · Q skill · F ultimate<br>Your adventure save stays untouched.</div>
+<div class="controls"><div class="row" aria-label="Choose hero"><button data-class="knight" aria-pressed="true">Warrior</button><button data-class="mage" aria-pressed="false">Mage</button><button data-class="ranger" aria-pressed="false">Ranger</button><button id="attack" class="primary" disabled>Attack · Space</button><button id="skill" disabled>Skill · Q</button><button id="ultimate" disabled>Ultimate · F</button></div><div class="row"><button id="angle">Turn hero ↻</button><button id="orbit">Orbit view ↻</button><button id="speed" aria-pressed="false">Speed · 1×</button><button id="freeze" aria-pressed="false">Freeze</button><button id="step" disabled title="Advance the frozen animation by 1/30 second">Step 1 frame</button><button id="sound" aria-pressed="true">Sound · On</button><a href="./">Back to adventure</a></div><div class="row" aria-label="World feedback previews"><button id="preview-lane" disabled>Boss lane</button><button id="preview-dash" disabled>Dash trail</button><button id="preview-loot" disabled>Show loot</button><button id="rarity" disabled>Rarity · Rare</button><button id="preview-reset" disabled>Reset preview</button></div></div>
+<script src="./babylon.js"></script><script type="module">
+import {enableRightDragOrbit} from './camera-controls.js';
+import {createRenderer} from './renderer.js';
+import {createSpriteLibrary} from './sprites.js';
+import {createCombatVisuals} from './combat-visuals.js';
+import {createAbilityEffects,ABILITY_NAMES,ABILITY_CUES} from './ability-effects.js';
+import {createAudio} from './audio.js';
+import {createBossLane} from './boss-lane.js';
+import {enemyProfile} from './enemy-profile.js';
+import {createDashTrail} from './dash-trail.js';
+import {createLootBeacon} from './loot-beacon.js';
+import {createLootAppearance} from './loot-appearance.js';
+import {createImpactFeedback} from './impact-effects.js';
+import {RARITIES} from './core.js';
+const B=BABYLON,V=B.Vector3,$=s=>document.querySelector(s),canvas=$('#stage'),audio=createAudio();
+let engine,scene,camera,sprites,hero,heroHalo,abilityEffects,dashTrail,impacts,cls='knight',frozen=false,slow=false,sound=true,turn=0,flight=[],count=0;
+let preview='combat',lane=null,dummy=null,dashPreview=null,lootPreview=null,lootBeacon=null,lootCollecting=false,dropKind='gear',rarityIndex=2,previewTime=0;
+audio.setEnabled(true);
+document.addEventListener('pointerdown',()=>{if(sound)audio.unlock();},{once:true});
+const facing=new V(0,0,-1),descriptions={knight:['WARRIOR · SUNSTEEL','A small sword and shield. A full arm sweep, with a bright crescent at impact.'],mage:['MAGE · STARLIGHT','Raise the wand, aim the crystal, and cast from its tip. Watch the hand recoil.'],ranger:['RANGER · WILLOWBOW','Draw the string back with one hand. Release the arrow, then nock another.']};
+const specialDetails={knight:{skill:'Tuck the shield, turn through a full sword sweep, and send golden crescents around you.',ultimate:'Raise the blade in both hands, spring upward, then plunge into a radiant shockwave.'},mage:{skill:'Sweep the wand sideways and open a ring of frost crystals with the supporting hand.',ultimate:'Lift the wand skyward, float on gathered magic, and call down a shower of stars.'},ranger:{skill:'Draw, fan the bow across three lanes, then release a piercing triple volley.',ultimate:'Aim the drawn bow overhead and call a rain of spirit arrows into the marked area.'}};
+const mat=(name,color,em=0)=>{const m=new B.StandardMaterial(name,scene);m.diffuseColor=B.Color3.FromHexString(color);m.emissiveColor=m.diffuseColor.scale(em);m.specularColor=B.Color3.Black();return m;};
+function clearPreview(){
+ lane?.mesh.dispose();lane=null;dummy?.root.dispose();dummy=null;lootPreview?.dispose();lootPreview=null;lootBeacon=null;lootCollecting=false;dashPreview=null;
+ dashTrail?.clear();impacts?.clear();abilityEffects?.clear();hero?.combat.cancel();
+ for(const effect of flight)effect.mesh.dispose();flight=[];
+ preview='combat';previewTime=0;hero?.root.position.setAll(0);if(hero)hero.motion={hop:0,sx:1,sy:1,roll:0};
+ if(camera){camera.target.set(0,1.05,0);camera.radius=13.5;camera.beta=1.04;}
+ if($('#view-distance'))$('#view-distance').textContent='View · Close';
+ $('header small').textContent='EMBERWILD · CHARACTER STUDY';$('header h1').textContent='The training clearing.';$('header p').innerHTML='Six special moves. One little hero.<br>Try Q and F, then freeze or slow the action.';
+}
+function startLanePreview(){
+ if(!hero)return;clearPreview();preview='lane';hero.root.position.set(2.8,0,-1);
+ const root=new B.TransformNode('training Hollow King',scene);root.position.set(0,0,5.2);dummy={root,sprite:sprites.createCreature('boss',root,enemyProfile('boss').spriteHeight)};
+ lane=createBossLane(B,scene,{origin:root.position,facing:new V(0,0,-1),width:3.4,length:13,delay:1.05,source:dummy});
+ camera.target.set(0,-1,-1.3);camera.radius=26;camera.beta=1.15;
+ $('#class-label').textContent='BOSS · HOLLOW SWEEP';$('#phase').textContent='Lane locked · warning';$('#detail').textContent='The fixed red rectangle is the exact danger area. Freeze, then step its 1.05-second countdown to the impact.';
+ if(sound){audio.unlock();audio.play('boss-warning');}
+}
+function startDashPreview(){
+ if(!hero)return;clearPreview();preview='dash';facing.set(1,0,0);hero.root.rotation.y=Math.PI/2;hero.root.position.set(-2.5,0,0);
+ dashPreview={time:0,duration:.2,start:hero.root.position.clone()};
+ $('#class-label').textContent='MOVEMENT · DODGE';$('#phase').textContent='Dash ready';$('#detail').textContent='A short five-unit dodge leaves three fine strokes along actual travel. Freeze and step to inspect the quick fade.';
+ if(sound){audio.unlock();audio.play('dash');}
+}
+function showLoot(){
+ if(!hero)return;clearPreview();preview='loot';$('header small').textContent='EMBERWILD · TREASURE STUDY';$('header h1').textContent='A little treasure.';$('header p').innerHTML='A gentle glow. A constellation of tiny stars.<br>Try each drop, then orbit or slow the shimmer.';const rarity=RARITIES[rarityIndex];
+ const color=dropKind==='gear'?rarity.color:dropKind==='gold'?'#f1cd6a':dropKind==='shard'?'#9fc7f3':'#d38887';
+ lootPreview=createLootAppearance(B,scene,{kind:dropKind,color});lootPreview.position.set(2.7,dropKind==='gear'?.05:.12,-.5);
+ const lightColor=dropKind==='gear'?({rare:'#59dafa',legendary:'#ffd15a',uncommon:'#78e694'}[rarity.name]||color):color;
+ lootBeacon=createLootBeacon(B,scene,lootPreview,lightColor,{beam:dropKind==='gear'&&rarity.name!=='common',rarity:rarity.name,intensity:dropKind==='gear'?1:.58});
+ camera.target.set(.55,1.05,0);camera.radius=11.5;
+ const label=rarity.name[0].toUpperCase()+rarity.name.slice(1);$('#rarity').textContent='Rarity · '+label;$('#class-label').textContent='TREASURE · '+(dropKind==='gear'?rarity.name:dropKind).toUpperCase();$('#phase').textContent=dropKind==='gear'?label+' equipment':dropKind==='gold'?'A few golden coins':dropKind==='shard'?'A starlight shard':'A healing draught';$('#detail').textContent='Tiny stars rise and twinkle above a breathing glow. Rare equipment shines a taller colored beam. Freeze or slow down to see each sparkle.';
+ if(sound){audio.unlock();audio.play('loot');}
+}
+function setClass(next){
+ if(!sprites)return;clearPreview();hero?.root.dispose();cls=next;
+ const root=new B.TransformNode('hero preview',scene),body=new B.TransformNode('hero bounce',scene);body.parent=root;root.rotation.y=Math.atan2(facing.x,facing.z);
+ const sprite=sprites.createHero(cls,body,2.35),combat=createCombatVisuals(B,scene,{root,heroClass:cls});hero={root,body,sprite,combat};
+ $('#skill').textContent='Q · '+ABILITY_NAMES[cls].skill;$('#ultimate').textContent='F · '+ABILITY_NAMES[cls].ultimate;$('#class-label').textContent=descriptions[cls][0];$('#detail').textContent=descriptions[cls][1];$('#phase').textContent='Ready when you are.';
+ document.querySelectorAll('[data-class]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.class===cls)));
+}
+function release(muzzle,aim,kind){
+ count++;if(kind!=='basic'){abilityEffects.release({heroClass:cls,kind,origin:hero.root.position,center:hero.root.position,facing:aim});$('#phase').textContent=ABILITY_NAMES[cls][kind]+'!';if(sound)audio.play(ABILITY_CUES[cls][kind]);if(cls==='ranger'&&kind==='skill')for(const offset of [-.16,0,.16]){const a=Math.atan2(aim.x,aim.z)+offset,dir=new V(Math.sin(a),0,Math.cos(a)),root=new B.TransformNode('preview volley arrow',scene),m=mat('spirit arrow','#e1ffb1',.6);root.position.copyFrom(muzzle);root.rotation.y=a;const shaft=B.MeshBuilder.CreateBox('volley shaft',{width:.05,height:.05,depth:1.1},scene);shaft.parent=root;shaft.material=m;const tip=B.MeshBuilder.CreateCylinder('volley arrowhead',{height:.24,diameterBottom:.2,diameterTop:0,tessellation:4},scene);tip.parent=root;tip.rotation.x=Math.PI/2;tip.position.z=.65;tip.material=m;root.onDisposeObservable.add(()=>m.dispose());flight.push({mesh:root,life:.7,max:.7,velocity:dir.scale(12),kind:'ranger'});}return;}$('#phase').textContent=cls==='knight'?'Slash!':cls==='mage'?'Cast!':'Loose!';
+ const color=cls==='mage'?'#b8e8ff':cls==='ranger'?'#d6efaf':'#fff0bc';
+ const material=mat('release effect',color,1),duration=kind==='skill'?.8:.48;let mesh;
+ if(cls==='knight'){
+  const paths=[[],[]],angle=Math.atan2(aim.x,aim.z);for(let i=0;i<=24;i++){const a=angle-.9+i/24*1.8;for(let j=0;j<2;j++)paths[j].push(new V(Math.sin(a)*(1.2+j*.3*Math.sin(i/24*Math.PI)),.9,Math.cos(a)*(1.2+j*.3*Math.sin(i/24*Math.PI))));}
+  mesh=B.MeshBuilder.CreateRibbon('sword crescent',{pathArray:paths,sideOrientation:B.Mesh.DOUBLESIDE},scene);
+ }else if(cls==='ranger'){
+  mesh=B.MeshBuilder.CreateCylinder('released arrow',{height:1,diameter:.055,tessellation:5},scene);mesh.rotation.set(Math.PI/2,Math.atan2(aim.x,aim.z),0);mesh.position.copyFrom(muzzle);
+ }else{mesh=B.MeshBuilder.CreateIcoSphere('wand bolt',{radius:kind==='skill'?.22:.13,subdivisions:2},scene);mesh.position.copyFrom(muzzle);}
+ mesh.material=material;mesh.isPickable=false;mesh.onDisposeObservable.add(()=>material.dispose());flight.push({mesh,life:duration,max:duration,velocity:cls==='knight'?V.Zero():aim.scale(5),kind:cls});
+ if(sound)audio.play(cls==='knight'?'sword-swing':cls==='mage'?'wand-release':'bow-release');
+}
+function attack(kind='basic'){
+ if(preview!=='combat'){clearPreview();$('#class-label').textContent=descriptions[cls][0];}
+ if(!hero||hero.combat.busy)return;
+ if(sound)audio.unlock();
+ const aim=facing.clone();let chargeFX;hero.combat.update(0,aim,camera.alpha,{hop:hero.motion?.hop||0});
+ if(hero.combat.attack({kind,facing:aim,onRelease:p=>{chargeFX?.cancel();release(p,aim,kind);}})){
+  $('#detail').textContent=kind==='basic'?descriptions[cls][1]:specialDetails[cls][kind];
+  $('#phase').textContent=kind==='basic'?(cls==='knight'?'Wind-up…':cls==='mage'?'Gathering light…':'Drawing the string…'):ABILITY_NAMES[cls][kind]+' · charging';
+  if(kind!=='basic')chargeFX=abilityEffects.charge({heroClass:cls,kind,root:hero.root,center:hero.root.position,windup:hero.combat.state.windup});
+  if(sound)audio.play(kind==='basic'?(cls==='knight'?'sword-charge':cls==='mage'?'wand-charge':'bow-draw'):ABILITY_CUES[cls][kind]+'-charge');
+ }
+}
+function simulate(dt,paused){
+ if(!paused){
+  previewTime+=dt;
+  if(dashPreview){const before=hero.root.position.clone();dashPreview.time+=dt;hero.root.position.x=dashPreview.start.x+5*Math.min(1,dashPreview.time/dashPreview.duration);dashTrail.spawn(before,hero.root.position);$('#phase').textContent=dashPreview.time<dashPreview.duration?'Dashing…':'Dash complete · strokes fading';}
+  if(lane){lane.time-=dt;const progress=Math.max(0,Math.min(1,1-lane.time/lane.max));lane.clock.scaling.setAll(Math.max(.04,progress));lane.fill.visibility=.55+.45*progress;$('#phase').textContent='Hollow Sweep · '+Math.max(0,lane.time).toFixed(2)+'s';if(lane.time<=0){const impact=lane.impact();for(let j=1;j<=6;j++)impacts.spawn(impact.origin.add(impact.facing.scale(impact.length*j/7)).add(new V(0,.6,0)),'#f4b693');$('#phase').textContent=lane.contains(hero.root.position)?'Impact · inside the lane':'Impact · hero safely outside';lane.mesh.dispose();lane=null;if(sound)audio.play('hit');}}
+  if(lootPreview){
+   if(dropKind!=='gear')lootPreview.rotation.y+=dt*.8;lootPreview.position.y=dropKind==='gear'?.05+Math.sin(previewTime*2)*.02:.12+Math.sin(previewTime*3)*.05;
+   if(lootCollecting){lootPreview.position.x+=(hero.root.position.x-lootPreview.position.x)*Math.min(1,dt*4);lootPreview.position.z+=(hero.root.position.z-lootPreview.position.z)*Math.min(1,dt*4);}
+   lootBeacon.update(dt);
+   if(lootCollecting&&Math.hypot(lootPreview.position.x-hero.root.position.x,lootPreview.position.z-hero.root.position.z)<1.2){lootPreview.dispose();lootPreview=null;lootBeacon=null;$('#phase').textContent='Collected · every sparkle cleared';if(sound)audio.play(dropKind==='gold'||dropKind==='shard'?'coin':'loot');}
+  }
+  if(dummy)sprites.animate(dummy.sprite,dt,{moving:false,windup:lane?lane.time:0});
+  hero.motion=sprites.animate(hero.sprite,dt,{moving:!!dashPreview&&dashPreview.time<dashPreview.duration,pace:1.3});
+ }
+ const motion=hero.motion||{hop:0,sx:1,sy:1,roll:0};abilityEffects.update(dt,{paused});dashTrail.update(dt,{paused});impacts.update(dt,{paused});
+ hero.combat.update(dt,facing,camera.alpha,{paused,hop:motion.hop});
+ const body=hero.combat.bodyMotion;hero.body.position.y=motion.hop+body.hop;hero.sprite.scaling.set(motion.sx*body.sx,motion.sy*body.sy,1);hero.sprite.rotation.z=motion.roll+body.lean;
+ const yaw=Math.atan2(facing.x,facing.z)+body.spin;sprites.face(hero.sprite,new V(Math.sin(yaw),0,Math.cos(yaw)),camera.alpha);
+ if(dummy)sprites.face(dummy.sprite,new V(0,0,-1),camera.alpha);
+ if(heroHalo){heroHalo.position.x=hero.root.position.x;heroHalo.position.z=hero.root.position.z;}
+ const state=hero.combat.state;$('#progress').style.width=preview==='lane'?(lane?Math.min(100,(1-lane.time/lane.max)*100):100)+'%':preview==='dash'?Math.min(100,dashPreview.time/dashPreview.duration*100)+'%':state.active?Math.min(100,state.time/state.duration*100)+'%':'0%';
+ if(preview==='combat'&&!state.active&&count)$('#phase').textContent='Ready · '+count+' release'+(count===1?'':'s');
+ if(!paused)for(let i=flight.length-1;i>=0;i--){const e=flight[i];e.life-=dt;e.mesh.position.addInPlace(e.velocity.scale(dt));e.mesh.visibility=Math.max(0,e.life/e.max);if(e.life<=0){e.mesh.dispose();flight.splice(i,1);}}
+}
+try{
+ const renderer=await createRenderer(B,canvas,{gpuAvailable:!!navigator.gpu,location});
+ if(renderer){
+  engine=renderer.engine;engine.setHardwareScalingLevel(Math.max(1,devicePixelRatio/1.5));scene=new B.Scene(engine);abilityEffects=createAbilityEffects(B,scene);dashTrail=createDashTrail(B,scene);impacts=createImpactFeedback(B,scene);scene.clearColor=B.Color4.FromHexString('#658272ff');scene.fogMode=B.Scene.FOGMODE_EXP2;scene.fogDensity=.012;scene.fogColor=B.Color3.FromHexString('#658272');
+  camera=new B.ArcRotateCamera('training camera',-Math.PI/2,1.04,13.5,new V(0,1.05,0),scene);camera.attachControl(canvas,true);enableRightDragOrbit(camera);camera.lowerRadiusLimit=4.5;camera.upperRadiusLimit=42;camera.lowerBetaLimit=.45;camera.upperBetaLimit=1.35;camera.panningSensibility=0;camera.wheelDeltaPercentage=.025;camera.inputs.removeByType('ArcRotateCameraKeyboardMoveInput');
+  const hemi=new B.HemisphericLight('sky',new V(0,1,0),scene);hemi.intensity=.8;hemi.groundColor=B.Color3.FromHexString('#41583c');new B.DirectionalLight('afternoon light',new V(-.5,-1,.4),scene).intensity=.7;
+  const ground=B.MeshBuilder.CreateGround('clearing',{width:70,height:70},scene);ground.material=mat('clearing green','#6a8961');
+  const pad=B.MeshBuilder.CreateCylinder('training stone',{height:.06,diameter:4,tessellation:48},scene);pad.position.y=-.025;pad.material=mat('warm limestone','#a6b492');
+  const halo=heroHalo=B.MeshBuilder.CreateDisc('foot shadow',{radius:.64,tessellation:32,sideOrientation:B.Mesh.DOUBLESIDE},scene);halo.rotation.x=Math.PI/2;halo.position.y=.018;halo.material=mat('soft contact shadow','#2d4938');halo.material.alpha=.25;
+  const glow=new B.GlowLayer('wand glow',scene,{blurKernelSize:20});glow.intensity=.3;
+  sprites=await createSpriteLibrary(B,scene);setClass(cls);$('#attack').disabled=$('#skill').disabled=$('#ultimate').disabled=false;
+  $('#backend').textContent=renderer.backend+' · Babylon.js\nProduction character and combat animations';
+  document.querySelectorAll('[data-class]').forEach(b=>b.onclick=()=>setClass(b.dataset.class));
+  $('#attack').onclick=()=>attack();$('#skill').onclick=()=>attack('skill');$('#ultimate').onclick=()=>attack('ultimate');
+  for(const id of ['preview-lane','preview-dash','preview-loot','rarity','preview-reset'])$('#'+id).disabled=false;
+  $('#preview-lane').onclick=startLanePreview;$('#preview-dash').onclick=startDashPreview;$('#preview-loot').onclick=showLoot;
+  const dropButton=document.createElement('button');dropButton.id='drop-kind';dropButton.textContent='Drop · Gear';$('#preview-loot').after(dropButton);dropButton.onclick=()=>{const kinds=['gear','gold','shard','potion'];dropKind=kinds[(kinds.indexOf(dropKind)+1)%kinds.length];dropButton.textContent='Drop · '+dropKind[0].toUpperCase()+dropKind.slice(1);showLoot();};
+  const collectButton=document.createElement('button');collectButton.id='collect-loot';collectButton.textContent='Collect loot';$('#rarity').after(collectButton);collectButton.onclick=()=>{if(lootPreview){lootCollecting=true;$('#phase').textContent='Drifting toward the hero…';}};
+  $('#rarity').onclick=()=>{rarityIndex=(rarityIndex+1)%RARITIES.length;showLoot();};
+  $('#preview-reset').onclick=()=>{clearPreview();$('#class-label').textContent=descriptions[cls][0];$('#detail').textContent=descriptions[cls][1];$('#phase').textContent='Ready when you are.';};
+  $('#angle').onclick=()=>{hero.combat.cancel();abilityEffects.clear();turn=(turn+1)%8;facing.set(Math.sin(turn*Math.PI/4),0,-Math.cos(turn*Math.PI/4));hero.root.rotation.y=Math.atan2(facing.x,facing.z);};
+  $('#orbit').onclick=()=>camera.alpha+=Math.PI/4;
+  const distanceButton=document.createElement('button');distanceButton.id='view-distance';distanceButton.textContent='View · Close';$('#orbit').after(distanceButton);distanceButton.onclick=()=>{const far=camera.radius<25;camera.radius=far?35:11.5;camera.beta=far?.82:1.04;distanceButton.textContent=far?'View · Adventure':'View · Close';};
+  $('#speed').onclick=e=>{slow=!slow;e.target.textContent=slow?'Speed · ¼×':'Speed · 1×';e.target.setAttribute('aria-pressed',String(slow));};
+  $('#freeze').onclick=e=>{frozen=!frozen;e.target.textContent=frozen?'Resume':'Freeze';e.target.setAttribute('aria-pressed',String(frozen));$('#step').disabled=!frozen;};
+  $('#step').onclick=()=>{if(frozen)simulate(1/30,false);};
+  $('#sound').onclick=e=>{sound=!sound;audio.setEnabled(sound);if(sound)audio.unlock();e.target.textContent=sound?'Sound · On':'Sound · Off';e.target.setAttribute('aria-pressed',String(sound));};
+  document.addEventListener('keydown',e=>{if(['Space','KeyQ','KeyF'].includes(e.code)){e.preventDefault();if(!e.repeat)attack(e.code==='KeyQ'?'skill':e.code==='KeyF'?'ultimate':'basic');}});
+  if(new URLSearchParams(location.search).get('preview')==='loot')showLoot();
+  engine.runRenderLoop(()=>{
+   const dt=Math.min(.04,engine.getDeltaTime()/1000)*(slow?.25:1);
+   simulate(dt,frozen);
+   scene.render();
+  });
+ }
+}catch(error){console.error(error);$('#backend').textContent='The clearing could not open: '+error.message;}
+window.addEventListener('resize',()=>engine?.resize());window.addEventListener('beforeunload',()=>{audio.dispose();clearPreview();hero?.root.dispose();sprites?.dispose();scene?.dispose();engine?.dispose();});
+</script></html>

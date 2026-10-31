@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Emberwild · Painted places</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#334e40;color:#fff2cf;font:15px Georgia,serif}canvas{display:block;width:100vw;height:100vh;touch-action:none}header{position:absolute;left:26px;top:22px;pointer-events:none;text-shadow:0 2px 9px #122a23}small{font:700 11px system-ui;letter-spacing:.2em;color:#e3d7ab}h1{font-weight:normal;font-size:34px;margin:7px 0}header p{margin:0;line-height:1.5}#status{position:absolute;right:24px;top:24px;font:12px system-ui;text-shadow:0 1px 4px #1a3024}.controls{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:7px;justify-content:center;flex-wrap:wrap;width:900px;max-width:94vw;padding:12px;background:#1f372fe8;border:1px solid #d8d3a066;border-radius:12px}button,a,select{font:600 12px system-ui;border:1px solid #9fae8266;background:#365344;color:#fff2d1;padding:10px 13px;border-radius:5px;cursor:pointer;text-decoration:none}button[aria-pressed=true]{background:#e5cf96;color:#2b4033}button:focus-visible,a:focus-visible{outline:3px solid #f2d586}@media(max-width:700px){h1{font-size:25px}header{left:16px;top:16px}header p{font-size:12px}#status{top:100px;left:16px}.controls{bottom:12px}button,a,select{padding:8px;font-size:11px}}</style>
+<canvas id="stage" aria-label="Rotatable painted 3D environment preview"></canvas><header><small>EMBERWILD · A PAINTED LITTLE WORLD</small><h1 id="place">Hearthglen village</h1><p>Flat painted color. Real depth as you turn.<br>Drag to orbit · Scroll to look closer.</p></header><div id="status" role="status">Preparing the scenery…</div><nav class="controls" aria-label="Scenery views"><button data-place="village" aria-pressed="true">Village</button><button data-place="trees" aria-pressed="false">Tree grove</button><button data-place="meadow" aria-pressed="false">Meadow</button><button data-place="pond" aria-pressed="false">Pond & bridge</button><button data-place="gate" aria-pressed="false">Ancient gate</button><button data-place="dungeon" aria-pressed="false">Dungeon</button><select id="frontier" aria-label="Camps and landmarks"><option value="">Camps &amp; landmarks…</option></select><select id="tree-design" aria-label="Tree design"></select><button id="inspect" hidden>Inspect next tree</button><button id="orbit">Orbit view ↻</button><button id="wind" aria-pressed="false">Pause breeze</button><a href="./">Back to adventure</a></nav>
+<script src="./babylon.js"></script><script type="module">
+import {enableRightDragOrbit} from './camera-controls.js';
+import {createWorldLighting,setWorldLighting} from './lighting.js';
+import {createRenderer} from './renderer.js';
+import {createWorld} from './world.js';
+import {TREE_STYLE_OPTIONS,normalizeTreeStyle} from './tree-style-options.js';
+import {applyCelShading} from './cel.js';
+import {createSpriteLibrary} from './sprites.js';
+import {createVillagers} from './villagers.js';
+import {CAMP_LAYOUT,EXPANSION_LANDMARKS} from './world-expansion.js';
+import {enemyProfile} from './enemy-profile.js';
+const B=BABYLON,V=B.Vector3,$=s=>document.querySelector(s),canvas=$('#stage');
+const places={trees:{title:'The painted tree grove',x:0,z:3,r:48},village:{title:'Hearthglen town',x:0,z:8,r:52},meadow:{title:'Willowrest meadow',x:13,z:-23,r:26},pond:{title:'Moonmirror pond',x:-30,z:-4,r:31},gate:{title:'The Forgotten Gate',x:0,z:41,r:27},dungeon:{title:'The Hollow Sanctum',x:0,z:17,r:36}};
+for(const p of [...CAMP_LAYOUT,...EXPANSION_LANDMARKS]){places[p.id]={title:p.name,x:p.x,z:p.z,r:CAMP_LAYOUT.includes(p)?32:29};const option=document.createElement('option');option.value=p.id;option.textContent=p.name;$('#frontier').append(option);}
+let engine,scene,camera,world,shadow,sun,sprites,villagers,zone='',time=0,paused=false,treeFocus=-1,guards=[],backend='',styleRequest=0;
+let selectedTreeStyle='current';try{selectedTreeStyle=normalizeTreeStyle(new URLSearchParams(location.search).get('treeStyle')||localStorage.getItem('emberwild-tree-style-preview'));}catch{}
+for(const style of TREE_STYLE_OPTIONS){const option=document.createElement('option');option.value=style.id;option.textContent=style.name;$('#tree-design').append(option);}$('#tree-design').value=selectedTreeStyle;
+async function applyPreviewTreeStyle(){
+ const targetWorld=world,ticket=++styleRequest;$('#tree-design').disabled=true;$('#status').textContent='Growing the selected tree design…';
+ try{const result=await targetWorld.setTreeStyle(selectedTreeStyle,{onShadowChange(removed,added){for(const mesh of removed)shadow.removeShadowCaster(mesh);for(const mesh of added)shadow.addShadowCaster(mesh);}});if(ticket===styleRequest&&world===targetWorld&&result.applied){$('#status').textContent=backend+' · '+TREE_STYLE_OPTIONS.find(s=>s.id===selectedTreeStyle).name+' · Drag to orbit';try{localStorage.setItem('emberwild-tree-style-preview',selectedTreeStyle);const url=new URL(location.href);url.searchParams.set('treeStyle',selectedTreeStyle);history.replaceState(null,'',url);}catch{}}}
+ catch(error){console.error(error);if(ticket===styleRequest){$('#status').textContent='That tree design could not load. Previous trees kept.';selectedTreeStyle=targetWorld.treeStyle;$('#tree-design').value=selectedTreeStyle;}}
+ finally{if(ticket===styleRequest)$('#tree-design').disabled=false;}
+}
+function setPlace(key){
+ guards.forEach(g=>g.root.dispose());guards=[];
+ const p=places[key],next=key==='dungeon'?'dungeon':'overworld',worldKey=key==='trees'?'trees':next;
+ if(zone!==worldKey){villagers?.dispose();if(world)for(const mesh of world.shadowCasters)shadow.removeShadowCaster(mesh);world?.dispose();zone=worldKey;world=createWorld(B,scene,{zone:next,treeStudy:key==='trees',spriteVillagers:true});villagers=createVillagers(B,scene,world,sprites);for(const mesh of world.shadowCasters)shadow.addShadowCaster(mesh);applyCelShading(B,scene);applyPreviewTreeStyle();}
+ setWorldLighting(B,scene,sun,next);sun.position.set(p.x-36,40,p.z-27.2);
+ camera.target.set(p.x,1.1,p.z);camera.radius=p.r;camera.alpha=-Math.PI/2-.28;camera.beta=key==='trees'?.94:.82;
+ $('#place').textContent=p.title;treeFocus=-1;$('#inspect').hidden=key!=='trees';$('#frontier').value=[...CAMP_LAYOUT,...EXPANSION_LANDMARKS].some(p=>p.id===key)?key:'';document.querySelectorAll('[data-place]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.place===key)));
+ for(const p of world.spawnPoints.filter(p=>p.campId===key)){const root=new B.TransformNode('preview-guard',scene);root.position.set(p.x,0,p.z);const sprite=sprites.createCreature(p.kind,root,enemyProfile(p.kind).spriteHeight);guards.push({root,sprite,facing:new V(Math.sin(p.x),0,-1)});}
+}
+try{
+ const renderer=await createRenderer(B,canvas,{gpuAvailable:!!navigator.gpu,location});
+ if(renderer){
+  backend=renderer.backend;engine=renderer.engine;engine.setHardwareScalingLevel(Math.max(1,devicePixelRatio/1.4));scene=new B.Scene(engine);scene.clearColor=new B.Color4(.64,.79,.8,1);scene.fogMode=B.Scene.FOGMODE_EXP2;scene.fogDensity=.006;scene.fogColor=new B.Color3(.64,.79,.8);
+  ({sun,shadow}=createWorldLighting(B,scene));
+  camera=new B.ArcRotateCamera('scenery camera',-Math.PI/2-.28,.82,34,V.Zero(),scene);camera.minZ=.2;camera.maxZ=180;camera.fov=.72;camera.lowerBetaLimit=.4;camera.upperBetaLimit=1.15;camera.lowerRadiusLimit=12;camera.upperRadiusLimit=70;camera.wheelDeltaPercentage=.02;camera.panningSensibility=0;camera.attachControl(canvas,true);enableRightDragOrbit(camera);camera.inputs.removeByType('ArcRotateCameraKeyboardMoveInput');
+  scene.imageProcessingConfiguration.contrast=1.05;scene.imageProcessingConfiguration.exposure=1.03;const glow=new B.GlowLayer('painted magic',scene,{blurKernelSize:24});glow.intensity=.25;
+  sprites=await createSpriteLibrary(B,scene);const initialPlace=new URLSearchParams(location.search).get('place');setPlace(Object.hasOwn(places,initialPlace)?initialPlace:'village');$('#status').textContent=renderer.backend+' · Drag to see every side';
+  async function showPlace(key){if(!Object.hasOwn(places,key))return;$('#status').textContent='Preparing '+places[key].title+'…';await new Promise(resolve=>requestAnimationFrame(()=>setTimeout(resolve,0)));try{setPlace(key);$('#status').textContent=renderer.backend+' · Drag to see every side';}catch(error){console.error(error);$('#status').textContent='Scenery could not open: '+error.message;}}
+  document.querySelectorAll('[data-place]').forEach(button=>button.onclick=()=>showPlace(button.dataset.place));$('#frontier').onchange=e=>showPlace(e.target.value);$('#tree-design').onchange=()=>{selectedTreeStyle=normalizeTreeStyle($('#tree-design').value);applyPreviewTreeStyle();};$('#orbit').onclick=()=>camera.alpha+=Math.PI/4;
+  $('#inspect').onclick=()=>{const trees=world.treePositions;if(!trees.length)return;treeFocus=(treeFocus+1)%trees.length;const tree=trees[treeFocus];camera.target.set(tree.x,2.7*tree.s,tree.z);camera.radius=16;camera.beta=.94;const names={moss:'Moss oak',apple:'Ruby apple',pear:'Golden pear',forest:'Old forest oak',pink:'Rose blossom',ivory:'Ivory blossom',gold:'Amber crown',russet:'Copperwood',violet:'Violet spire'};$('#place').textContent=names[tree.variant]||'Painted tree';};
+  $('#wind').onclick=e=>{paused=!paused;e.target.textContent=paused?'Resume breeze':'Pause breeze';e.target.setAttribute('aria-pressed',String(paused));};
+  engine.runRenderLoop(()=>{const dt=Math.min(.04,engine.getDeltaTime()/1000);if(!paused){time+=dt;world.update(dt,time);}for(const g of guards){sprites.animate(g.sprite,paused?0:dt,{moving:false});sprites.face(g.sprite,g.facing,camera.alpha);}villagers?.update(dt,new V(0,0,-4),camera.alpha,paused);scene.render();});
+ }
+}catch(error){console.error(error);$('#status').textContent='Scenery could not open: '+error.message;}
+window.addEventListener('resize',()=>engine?.resize());window.addEventListener('beforeunload',()=>{villagers?.dispose();sprites?.dispose();world?.dispose();scene?.dispose();engine?.dispose();});
+</script></html>
