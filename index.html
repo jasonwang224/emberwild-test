@@ -33,28 +33,32 @@
   <div class="world-vignette" aria-hidden="true"></div>
 
   <section id="intro" aria-label="Welcome to Emberwild">
+    <header class="title-nav">
+      <button class="title-brand" data-title-action="home" type="button" aria-label="Emberwild home"><span aria-hidden="true">♛</span> EMBERWILD</button>
+      <nav aria-label="Start menu"><button data-title-action="home" class="current" type="button"><span aria-hidden="true">◆</span> Home</button><button data-title-action="adventure" type="button"><svg><use href="#icon-sword"/></svg> Adventure</button><button data-title-action="town" type="button"><span aria-hidden="true">⌂</span> Town</button><button data-title-action="map" type="button"><svg><use href="#icon-map"/></svg> Map</button><button data-title-action="controls" type="button"><svg><use href="#icon-book"/></svg> How to play</button></nav>
+      <div class="title-tools"><button id="title-sound" type="button" aria-label="Enable title music" aria-pressed="false" title="Title music">♪</button><button id="title-pause" type="button" aria-label="Pause animated backdrop" aria-pressed="false" title="Pause animated backdrop">Ⅱ</button></div>
+    </header>
     <div class="intro-panel">
-      <div class="brand-mark"><svg><use href="#icon-leaf"/></svg><span>AN ADVENTURE AWAITS</span><i></i></div>
-      <h1>EMBERWILD</h1>
-      <div class="title-sub"><span></span>The Verdant Crown<span></span></div>
-      <p class="intro-story">The forest remembers its magic.<br>It needs someone to bring it home.</p>
-      <p class="intro-description">Venture beyond the village with a loyal companion. Uncover ancient shrines, gather wondrous treasures, and awaken the heart of the wild.</p>
-      <fieldset class="class-picker">
-        <legend>CHOOSE YOUR CALLING <span>01 — 03</span></legend>
+      <svg class="title-crown" viewBox="0 0 64 46" aria-hidden="true"><path class="crown-border" d="M3 9h10v7h7V7h7V0h10v7h7v9h7V9h10v34H3Z"/><path class="crown-gold" d="M8 15h5v8h12V12h5V5h4v7h5v11h12v-8h5v23H8Z"/><path class="crown-light" d="M8 15h5v8h12V12h5V5h4v7h5v11h12v-8h5v14H8Z"/><path class="crown-jewels" d="M15 30h5v5h-5zm14-4h6v9h-6zm15 4h5v5h-5z"/></svg>
+      <h1 class="title-logo" data-text="EMBERWILD" aria-label="Emberwild">EMBERWILD</h1>
+      <div class="title-sub">THE VERDANT CROWN</div>
+      <div id="startup-loading" class="startup-loading" data-state="loading" aria-busy="true">
+        <div class="loading-heading"><span id="loading-label">LOADING YOUR ADVENTURE</span><span id="loading-percent" aria-hidden="true">0%</span></div>
+        <div id="loading-gauge" class="loading-gauge" role="progressbar" aria-labelledby="loading-label" aria-describedby="loading-status" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="loading-fill"></span></div>
+        <div id="loading-status" role="status">Preparing the valley…</div>
+        <button id="loading-retry" class="secondary" type="button" hidden>Reload adventure</button>
+      </div>
+      <div class="start-actions"><button id="start-button" disabled class="primary begin-button" type="button">Begin adventure</button><button id="continue-button" class="secondary" type="button" hidden>Continue your journey</button></div>
+      <fieldset class="class-picker" id="title-class-picker" tabindex="-1">
+        <legend>CHOOSE YOUR HERO</legend>
         <div class="class-options">
-          <button class="class-card selected" data-class="knight" aria-pressed="true" type="button"><svg><use href="#icon-sword"/></svg><strong>Knight</strong><span>Steel & courage</span><i></i></button>
-          <button class="class-card" data-class="mage" aria-pressed="false" type="button"><svg><use href="#icon-spark"/></svg><strong>Mage</strong><span>Arcane wonder</span><i></i></button>
-          <button class="class-card" data-class="ranger" aria-pressed="false" type="button"><svg><use href="#icon-bow"/></svg><strong>Ranger</strong><span>Wild precision</span><i></i></button>
+          <button class="class-card selected" data-class="knight" aria-pressed="true" type="button"><svg><use href="#icon-sword"/></svg><strong>Knight</strong><i></i></button>
+          <button class="class-card" data-class="mage" aria-pressed="false" type="button"><svg><use href="#icon-spark"/></svg><strong>Mage</strong><i></i></button>
+          <button class="class-card" data-class="ranger" aria-pressed="false" type="button"><svg><use href="#icon-bow"/></svg><strong>Ranger</strong><i></i></button>
         </div>
       </fieldset>
-      <div class="start-actions"><button id="start-button" disabled class="primary begin-button" type="button">Begin adventure <span aria-hidden="true">→</span></button><button id="continue-button" class="secondary" type="button" hidden>Continue your journey</button></div>
-      <div id="loading-status" role="status">Preparing the valley…</div>
-      <div class="intro-controls"><span><kbd>WASD</kbd> Move</span><span><kbd>Space</kbd> Attack</span><span><kbd>E</kbd> Interact</span><span><kbd>Shift</kbd> Dash</span></div>
-      <p class="intro-camera-help"><span class="camera-pointer-hint"><b>See every side.</b> Hold right mouse + drag to orbit · Scroll to zoom<br><kbd>Z</kbd><kbd>C</kbd> Rotate · <kbd>V</kbd> Reset view</span><span class="camera-touch-hint"><b>See every side.</b> Drag the world to orbit · Pinch to zoom.<br>Use the stick to move and the camera buttons to reset your view.</span></p>
-      <p class="intro-note"><span class="status-dot"></span> Single-player adventure · Companion included · Saves on this device</p>
     </div>
-    <div class="intro-scene-label" aria-hidden="true"><span>THE FIRST CHAPTER</span><strong>A world worth protecting.</strong><div>EXPLORE <i>✦</i> DISCOVER <i>✦</i> BECOME</div></div>
-    <div class="corner-ornament" aria-hidden="true">✧</div>
+    <footer class="title-footer"><span><i class="status-dot"></i> A little world. A grand adventure.</span><span>Single player <i>✦</i> Saved on this device</span></footer>
   </section>
 
   <div id="hud" hidden>
@@ -87,6 +91,7 @@
   <div id="float-layer" aria-hidden="true"></div>
   <div id="toast-stack" aria-live="polite"></div>
   <div id="modal" role="dialog" aria-modal="true" aria-label="Adventure menu" hidden><div id="modal-content"></div></div>
+  <script src="./loading-progress.js"></script>
   <script src="./babylon.js"></script>
   <script type="module" src="./main.js"></script>
 </body>

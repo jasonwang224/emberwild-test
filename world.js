@@ -9,11 +9,14 @@ import {treeAppearance,buildTreeCanopy,buildTreeBranches,buildTreeAccents} from 
 import {createTreeStyleController} from './tree-style-controller.js';
 import {TOWN_PLAN,buildTownExpansion} from './town-expansion.js';
 import {EXPANSION_BOUNDS,EXPANSION_ROUTES,expansionReservedAreas,buildWorldExpansion} from './world-expansion.js';
+import {buildCampTerrain} from './camp-terrain.js';
+import {dressCamps} from './camp-dressing.js';
 import {isTownSafe,findClearPosition} from './world-navigation.js';
 import {enemyProfile} from './enemy-profile.js';
 import {createCircleQuery,createSegmentQuery} from './world-spatial-query.js';
 import {canopyVertexLayout,deformCanopyTemplate,cachedCanopyPaintUV} from './canopy-vertex-cache.js';
 import {applyBatchVertexData,uploadBatchGeometry} from './world-batch-geometry.js';
+import {installWaterSurface} from './water-surface.js';
 export {treeAppearance} from './tree-canopy.js';
 
 export function createWorld(B, scene, options = {}) {
@@ -645,15 +648,25 @@ export function createWorld(B, scene, options = {}) {
       const shelf=box('pond-grassy-shelf',x,h+.035,z,w+.08,.12,1.15,j%2?M.grass:M.grassLight);shelf.rotation.y=-a;
       if(j%2===0){clover(x+Math.sin(a)*.4,z+Math.cos(a)*.4,1.2);grassTuft(x+Math.sin(a)*.6,z+Math.cos(a)*.6,1.6);}
     }
-    for(let j=0;j<25;j++){const a=j*2.4,r=1.4+Math.sqrt(j/25)*5.5;const glint=box('water-pixel-sparkle',-33+Math.sin(a)*r,.063,-5+Math.cos(a)*r*.86,.08+(j%3)*.045,.008,.035,M.ripple);glint.rotation.y=j*.3;}
-    for(let j=0;j<12;j++){const x=range(-37,-30),z=range(-9,0);cylinder('lily-pad',x,.055,z,.25,.035,M.leaf,8);if(j%3===0)ball('water-lily',x,.16,z,.13,M.pink);}
+    // The water shader supplies moving glints; static white blocks made the
+    // surface read as a flat painted disk when the camera rotated.
+    for(let j=0;j<12;j++){const x=range(-37,-30),z=range(-9,0);cylinder('lily-pad',x,.055,z,.25,.035,j%3?M.leaf:M.leafLight,8);if(j%3===0){ball('water-lily',x,.16,z,.13,M.pink);cylinder('lily-pad-small',x+.28,.057,z-.17,.16,.025,M.leafLight,7);cylinder('lily-pad-small',x-.23,.056,z+.22,.13,.025,M.leaf,7);}}
     for(let j=0;j<9;j++){const x=-27.6-j*.44;box('dock-plank',x,.20,-6, .40,.2,2.7,M.woodLight);}
     for(const x of [-27.5,-30.9])for(const z of [-7.3,-4.7])cylinder('dock-post',x,.22,z,.12,1.1,M.wood,6);
     const fish=interact('fishing','fishing','Moonmirror Pond',-26,-7);barrel(.45,0,.7,fish,false);
     beam('fishing-rod',[-.2,.25,0],[-1.25,2.05,.25],.045,M.woodLight,fish,false);
     beam('fishing-line',[-1.25,2.05,.25],[-3,.3,1],.008,M.cream,fish,false);
     const bob=ball('fishing-bobber',-3,.3,1,.10,M.red,fish,false);animated.push({type:'bob',mesh:bob,baseY:.3,phase:0});
-    for(let j=0;j<12;j++){const a=range(0,6.28),x=-33+Math.sin(a)*7.6,z=-5+Math.cos(a)*7.2;for(let k=0;k<3;k++)cylinder('pond-reeds',x+k*.12,.6,z,.035,range(.8,1.4),M.leafDark,4);}
+    for(let j=0;j<12;j++){
+      const a=range(0,6.28),x=-33+Math.sin(a)*7.6,z=-5+Math.cos(a)*7.2;
+      for(let k=0;k<3;k++){
+        const h=range(.8,1.4),px=x+k*.12;
+        cylinder('pond-reeds',px,h*.5+.05,z,.018,h,M.leafDark,4);
+        if(k!==1)cylinder('pond-cattail',px,h-.06,z,.052,.24,M.woodDark,6);
+        const leaf=cylinder('pond-reed-leaf',px+.055,.36,z+.06,.045,.66,k%2?M.leafLight:M.goldLeafLight,4,root,true,0);
+        leaf.rotation.z=(k-1)*.28;leaf.rotation.x=.18;
+      }
+    }
     // A small bridge crosses a decorative spring in the north meadow.
     const beforeBrookSeed=seed;
     const brook=[[-13.6,18.3],[-13.2,20.5],[-13,22.5],[-13,25.5],[-12.2,27.8],[-13.1,30.2],[-12.9,31.8]];
@@ -700,6 +713,8 @@ export function createWorld(B, scene, options = {}) {
     herbs.forEach(([x,z],i)=>herb('herb'+i,x,z));
     const points=[[-15,-20,'slime',1],[13,-18,'slime',1],[-31,7,'slime',1],[32,7,'slime',1],[-30,17,'mushroom',2],[-34,16,'mushroom',2],[-27,30,'wolf',2],[-36,32,'mushroom',2],[30,32,'slime',2],[35,24,'wolf',2],[29,35,'mushroom',2],[37,34,'golem',3],[26,-20,'wolf',2],[34,-27,'mushroom',2],[25,-30,'slime',2],[35,-16,'wolf',2],[-33,-23,'wolf',2],[-38,-29,'slime',2],[-16,32,'mushroom',2],[-9,39,'wolf',3],[9,39,'wolf',3],[15,43,'golem',3],[40,10,'mushroom',2],[-8,-31,'slime',1]];
     expansion=buildWorldExpansion({B,scene,root,M,box,cylinder,ball,torus,beam,rock,tree,shrub,flower,grassTuft,fern,barrel,chest,obstacle,animated});
+    const campTerrain=buildCampTerrain({B,scene,root,M,cylinder,obstacle,obstacles,materials},expansion.camps);
+    dressCamps({root,M,box,cylinder,ball,beam,torus,obstacle,campGroundHeight:campTerrain.heightAt},expansion.camps);
     for(const p of expansion.spawnPoints)points.push([p.x,p.z,p.kind,p.level,p.campId]);
     // Hand placed silhouettes frame town before filling the surrounding woodland.
     for(const [x,z,s] of [[-20,3,1.2],[-21,-12,1.15],[20,2,1.25],[19,17,1.1],[-20,17,1.1],[4,-16,.95],[-8,-13,1.0],[-39,-12,1.4],[-17,-11,1.0],[21,-9,1.2],[-14,18,1.15],[14,18,1.1],[-20,10,1.2],[21,10,1.15],[18,-16,1.0]]){if(!isTownSafe(x,z,1)&&!points.some(([a,b,,level])=>Math.hypot(x-a,z-b)<(level===1?6.2:4.4)))tree(x,z,s,false,false);}
@@ -759,7 +774,8 @@ export function createWorld(B, scene, options = {}) {
     }
     // Fireflies and slowly drifting motes bring still scenery to life.
     for(let j=0;j<18;j++) {const x=range(-30,30),z=range(-20,35);const f=ball('firefly',x,range(.6,1.8),z,.045,j%2?M.gold:M.teal,root,false);animated.push({type:'firefly',mesh:f,base:f.position.clone(),phase:rand()*6});}
-    for(let j=0;j<7;j++) {const r=torus('water-ripple',-33+range(-5,5),.06,-5+range(-4,4),range(.3,.9),.025,M.ripple,root,false);animated.push({type:'ripple',mesh:r,phase:rand()*6});}
+    // Preserve world seed progression; the pond now animates flat brush marks.
+    for(let j=0;j<7;j++){range(-5,5);range(-4,4);range(.3,.9);rand();}
 
     for(const [x,z,kind,level,campId] of points) {
       const p=findClearPosition({x,z},obstacles,bounds,enemyProfile(kind).collisionRadius+.12,spawn);
@@ -821,6 +837,7 @@ export function createWorld(B, scene, options = {}) {
       // Keep ground casting, but skip incoming depth shadows on those crowns:
       // physical normal bias otherwise leaves striped acne as leaves sway.
       if(merged){merged.name='scenery-'+material.name+'-'+key;if(group.length>1)merged.parent=root;merged.isPickable=false;merged.receiveShadows=material!==M.treeFoliage;merged.freezeWorldMatrix();
+        if(material.metadata?.campTerrainFringe){merged.hasVertexAlpha=true;merged.useVertexColors=true;merged.alphaIndex=material.name==='world-camp-grass-fringe'?2:material.name==='world-camp-paving-fringe'?1:0;}
         if(material.metadata?.canopyWind){const bounds=merged.getBoundingInfo().boundingBox,pad=new B.Vector3(CANOPY_WIND_PADDING,CANOPY_WIND_PADDING,CANOPY_WIND_PADDING);merged.setBoundingInfo(new B.BoundingInfo(bounds.minimum.subtract(pad),bounds.maximum.add(pad)));merged.getBoundingInfo().update(merged.getWorldMatrix());}
         if(foliage&&!material.metadata?.foliageSurface){merged.renderOutline=true;merged.outlineWidth=.010;merged.outlineColor=new B.Color3(.16,.24,.17);}
         merged.metadata={...merged.metadata,treeGeometry};
@@ -839,6 +856,7 @@ export function createWorld(B, scene, options = {}) {
   }
   for(let j=shadowCasters.length-1;j>=0;j--)if(shadowCasters[j].isDisposed())shadowCasters.splice(j,1);
   const canopyWind=installCanopyWind(B,scene,[M.treeFoliage,M.treeFruit]);
+  const waterSurface=!dungeon&&!options.treeStudy?installWaterSurface(B,scene,{materials,root}):null;
   const treeStyles=createTreeStyleController(B,scene,{root,trees:treePositions,currentMeshes:root.getChildMeshes().filter(mesh=>mesh.metadata?.treeGeometry),shadowCasters});
   return {
     ground, obstacles, interactables, spawnPoints, shadowCasters, spawn, bounds, treePositions,mapRoutes,
@@ -848,6 +866,7 @@ export function createWorld(B, scene, options = {}) {
     setTreeStyle:(id,options)=>treeStyles.setStyle(id,options),
     update(dt,t) {
       canopyWind.update(t);
+      waterSurface?.update(t);
       treeStyles.update(t);
       expansion?.update?.(dt,t);
       for(const a of animated) {

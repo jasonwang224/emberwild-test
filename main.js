@@ -16,24 +16,30 @@ import {createAudio} from './audio.js';
 import {createSpriteLibrary} from './sprites.js';
 import {applyCelShading} from './cel.js';
 import {createVillagers} from './villagers.js';
+import {createCampRescues} from './camp-rescues.js';
+import {createTownGuards,GUARD_REACH} from './town-guards.js';
 import {createQuestMarkers} from './quest-markers.js';
 import {QUESTS,questStatus,questObjectives,acceptQuest,claimQuest,recordQuestEvent,setTrackedQuest} from './quests.js';
 import {mainQuestView,sideQuestView,questCardHTML,questObjectiveHTML,questRewardText,questLogHTML,questDialogueHTML,questGiverHTML,trackedQuestInfo,questGiverState as getQuestGiverState} from './quest-ui.js';
 import {createRenderer} from './renderer.js';
 import {bindGameLifecycle} from './game-lifecycle.js';
 import {createCombatVisuals} from './combat-visuals.js';
+import {createPotionAnimation} from './potion-animation.js';
+import {createHealingEffects} from './healing-effects.js';
+import {createTitleScene} from './title-scene.js';
 import {createAbilityEffects,ABILITY_CUES} from './ability-effects.js';
 import {CLASSES,SAVE_KEY,newGame,stats,addXP,xpNeeded,makeLoot,equip,parseSave,questInfo,RARITIES} from './core.js';
 
 const $=id=>document.getElementById(id),B=window.BABYLON,V=B?.Vector3;
 const canvas=$('game'),sound=createAudio();
 let engine,scene,camera,sun,shadow,world,hero,fox,sprites=null,selectedClass='knight',save=newGame(),mode='intro',zone='overworld',backend='WebGL',worldGeneration=0,t=0,hudTime=0,saveTime=0,lastZone='',inCombat=0;
-let enemies=[],projectiles=[],effects=[],drops=[],floaters=[],respawns=[],telegraphs=[],nearby=null,target=null,preferredTarget=null,targetMarker=null,clickTarget=null,boss=null,villagers=null,questMarkers=null,abilityEffects=null,impacts=null,dashTrail=null;
+let enemies=[],projectiles=[],effects=[],drops=[],floaters=[],respawns=[],telegraphs=[],nearby=null,target=null,preferredTarget=null,targetMarker=null,clickTarget=null,boss=null,villagers=null,campRescues=null,townGuards=null,questMarkers=null,abilityEffects=null,impacts=null,dashTrail=null;
 let attackCD=0,skillCD=0,ultCD=0,dashCD=0,dashTime=0,invincible=0,shieldTime=0,petCD=0,attackAnim=0,combo=0,comboTime=0,shake=0,paused=false,fishing=null,lastFacing=new V(0,0,1);
 const keys=new Set(),touch={x:0,z:0},materials=new Map(),camTarget=new V(0,0,0),temp=new V();
 const clearedCamps=new Set();
 let saved=null;try{saved=parseSave(localStorage.getItem(SAVE_KEY));}catch{}
 let treeStyleBusy=false,introWorldReusable=false;
+let titleScene=null,titlePaused=false,titleMusic=false,titleClock=0;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -47,8 +53,17 @@ function burst(pos,color,n=9){for(let i=0;i<n;i++){const m=sphere('mote',pos.clo
 function floating(text,pos,color='#fff2ce',big=false){const el=document.createElement('div');el.className='floating-number'+(big?' big':'');el.textContent=text;el.style.color=color;$('float-layer').append(el);floaters.push({el,pos:pos.clone(),life:1.2});}
 function toast(title,body='',icon='✦'){const el=document.createElement('div');el.className='game-toast';el.innerHTML=`<span>${icon}</span><div><b>${esc(title)}</b>${body?`<small>${esc(body)}</small>`:''}</div>`;$('toast-stack').append(el);setTimeout(()=>el.remove(),4500);}
 function announce(title,sub=''){const el=$('zone-banner');el.innerHTML=`<small>${esc(sub)}</small><strong>${esc(title)}</strong>`;el.hidden=false;el.classList.add('visible');setTimeout(()=>{el.classList.remove('visible');el.hidden=true;},3200);}
+function attachHeroEffects(actor,cls){
+ actor.restBodyScale=actor.body.scaling.clone();
+ actor.weaponParts=actor.sprite?[]:[actor.weapon,...actor.root.getChildMeshes().filter(mesh=>mesh.name==='guard'||mesh.name==='star crystal')];
+ actor.potion=createPotionAnimation(B,scene,{root:actor.root,heroClass:cls,sprite:!!actor.sprite});
+ actor.healing=createHealingEffects(B,scene,{root:actor.root,sprite:actor.sprite||actor.body});
+ return actor;
+}
+function potionEquipment(){const drinking=!!hero?.potion?.active;if(hero?.combat)hero.combat.rig.setEnabled(!drinking);else if(hero){hero.weaponParts.forEach(mesh=>mesh.setEnabled(!drinking));hero.arms[1]?.setEnabled(!drinking);}}
+function cancelPotion(){hero?.potion?.cancel();potionEquipment();}
 function createHero(cls){
- if(sprites){const root=new B.TransformNode('hero',scene),body=new B.TransformNode('sprite-bob',scene);body.parent=root;const sprite=sprites.createHero(cls,body,2.35);const dummy=()=>{const n=new B.TransformNode('animation-anchor',scene);n.parent=root;return n;};const halo=B.MeshBuilder.CreateDisc('hero shadow',{radius:.64,tessellation:24},scene);halo.parent=root;halo.rotation.x=Math.PI/2;halo.position.y=.035;halo.material=mat('#243e35',0,.3);halo.isPickable=false;return {root,body,feet:[dummy(),dummy()],arms:[dummy(),dummy()],weapon:dummy(),cape:dummy(),sprite,halo,combat:createCombatVisuals(B,scene,{root,heroClass:cls})};}
+ if(sprites){const root=new B.TransformNode('hero',scene),body=new B.TransformNode('sprite-bob',scene);body.parent=root;const sprite=sprites.createHero(cls,body,2.35);const dummy=()=>{const n=new B.TransformNode('animation-anchor',scene);n.parent=root;return n;};const halo=actorShadow(root,.64);halo.name='hero shadow';return attachHeroEffects({root,body,feet:[dummy(),dummy()],arms:[dummy(),dummy()],weapon:dummy(),cape:dummy(),sprite,halo,combat:createCombatVisuals(B,scene,{root,heroClass:cls})},cls);}
  const root=new B.TransformNode('hero',scene),c=CLASSES[cls].color;
  const feet=[sphere('boot',new V(-.25,.2,0),new V(.4,.45,.6),'#554737',root),sphere('boot',new V(.25,.2,0),new V(.4,.45,.6),'#554737',root)];
  const body=sphere('tunic',new V(0,.85,0),new V(1,1.15,.75),c,root);
@@ -62,25 +77,27 @@ function createHero(cls){
  if(cls==='knight'){sphere('helmet',new V(0,1.95,-.07),new V(1.05,.53,1),'#adbdb7',root);box('helmet crest',new V(0,2.2,-.04),new V(.15,.34,.75),'#b45243',root);weapon=box('blade',new V(.88,1.2,.35),new V(.14,1.5,.22),'#d9edf0',root);box('guard',new V(.88,.6,.35),new V(.6,.13,.24),'#d9b46b',root);const shield=sphere('shield',new V(-.79,.95,.12),new V(.28,.95,.8),'#547e89',root);box('shield emblem',new V(-.94,.96,.13),new V(.05,.45,.12),'#e8c477',root);}
  if(cls==='mage'){cone('wizard hat',new V(0,2.37,-.05),.65,1.1,'#735c9b',root);const brim=B.MeshBuilder.CreateCylinder('hat brim',{diameter:1.55,height:.12,tessellation:10},scene);brim.parent=root;brim.position.y=1.96;brim.material=mat('#8e71b6');brim.isPickable=false;weapon=box('staff',new V(.8,1.15,.25),new V(.14,2.15,.14),'#78593c',root);const gem=sphere('star crystal',new V(.8,2.3,.25),new V(.44,.65,.44),'#a5d9f0',root);gem.material=mat('#a5d9f0',.6);}
  if(cls==='ranger'){cone('hood',new V(0,2.05,-.05),.61,.65,'#4b8058',root);weapon=B.MeshBuilder.CreateTorus('bow',{diameter:1.25,thickness:.11,tessellation:14},scene);weapon.parent=root;weapon.position.set(.78,1.1,.25);weapon.rotation.z=Math.PI/2;weapon.material=mat('#bc9255');weapon.isPickable=false;box('quiver',new V(.24,1.06,-.64),new V(.4,.9,.35),'#6b4d36',root);}
- root.getChildMeshes().forEach(m=>shadow?.addShadowCaster(m));return {root,body,feet,arms:[armL,armR],weapon,cape};
+ root.getChildMeshes().forEach(m=>shadow?.addShadowCaster(m));return attachHeroEffects({root,body,feet,arms:[armL,armR],weapon,cape},cls);
 }
-function actorShadow(root,radius){const mesh=B.MeshBuilder.CreateDisc('grounded creature shadow',{radius,tessellation:20,sideOrientation:B.Mesh.DOUBLESIDE},scene);mesh.parent=root;mesh.rotation.x=Math.PI/2;mesh.position.y=.045;mesh.material=mat('#20392e',0,.24);mesh.material.disableLighting=true;mesh.isPickable=false;return mesh;}
+// Contact ink sits above painted paving; the raised arena needs its own height.
+function contactShadowHeight(root){return zone==='dungeon'&&Math.hypot(root.position.x,root.position.z-18)<9.9?.16:.075;}
+function actorShadow(root,radius){const mesh=B.MeshBuilder.CreateDisc('grounded creature shadow',{radius,tessellation:20,sideOrientation:B.Mesh.DOUBLESIDE},scene);mesh.parent=root;mesh.rotation.x=Math.PI/2;mesh.position.y=contactShadowHeight(root);mesh.material=mat('#292431',1,.54);mesh.material.disableLighting=true;mesh.material.specularColor=B.Color3.Black();mesh.isPickable=false;return mesh;}
 function landingDust(position,size=1){if(effects.length>120)return;for(let i=0;i<3;i++){const a=i/3*Math.PI*2+Math.random()*.4,m=B.MeshBuilder.CreateIcoSphere('landing puff',{radius:.10*size,subdivisions:1},scene);m.position.copyFrom(position).addInPlace(new V(Math.sin(a)*.28*size,.10,Math.cos(a)*.28*size));m.material=mat('#d3c79e',0,.35);m.isPickable=false;effects.push({mesh:m,life:.24,max:.24,kind:'dust',velocity:new V(Math.sin(a)*.6,.2,Math.cos(a)*.6)});}}
 function updateActorMotion(actor,mesh,dt,moving,pace=1){const motion=sprites.animate(mesh,dt,{moving,pace,windup:actor.windup||0,hurt:actor.hurt||0});if(!motion)return;actor.halo.scaling.setAll(1-motion.hop*.55);actor.halo.visibility=1-motion.hop*.7;if(motion.landed&&moving&&dist(actor.root.position,hero.root.position)<18)landingDust(actor.root.position,actor.kind==='boss'?1.7:.75);}
 function createFox(){const root=new B.TransformNode('fox',scene);if(sprites){const sprite=sprites.createCreature('fox',root,1.65),tail=new B.TransformNode('fox-tail-anchor',scene);tail.parent=root;return {root,tail,sprite,kind:'fox',halo:actorShadow(root,.42),facing:new V(0,0,-1)};}sphere('fox body',new V(0,.43,0),new V(.65,.6,.95),'#d59650',root);sphere('fox head',new V(0,.74,.38),new V(.7,.6,.65),'#e7a95f',root);sphere('fox muzzle',new V(0,.65,.68),new V(.38,.28,.3),'#f3dfb5',root);for(const x of [-.25,.25]){cone('fox ear',new V(x,1.12,.34),.2,.42,'#bd7642',root);sphere('fox eye',new V(x*.6,.8,.66),new V(.07,.09,.06),'#252e2a',root);}const tail=cone('fox tail',new V(0,.6,-.7),.25,.85,'#efca8a',root);tail.rotation.x=-.8;root.getChildMeshes().forEach(m=>shadow?.addShadowCaster(m));return {root,tail};}
 async function boot(){
  const lifecycle=bindGameLifecycle(window,{
   stopRenderLoop:()=>engine?.stopRenderLoop(),persist:()=>{if(hero&&mode!=='intro')persist();},
-  disposeWorld:()=>{try{clearZoneActors();}finally{world?.dispose();}},disposeScene:()=>scene?.dispose(),
+  disposeWorld:()=>{try{clearTitleBackdrop();clearZoneActors();}finally{world?.dispose();}},disposeScene:()=>scene?.dispose(),
   disposeSprites:()=>sprites?.dispose(),disposeSound:()=>sound.dispose(),disposeEngine:()=>engine?.dispose(),
   onError:(stage,error)=>console.info('Page cleanup:',stage,error)
  });
  try{
  if(!B)throw Error('The game engine could not load. Please reload.');
- $('loading-status').textContent='Growing a little world…';
+ window.EmberwildLoading?.set(10,'Waking the valley…');
  const renderer=await createRenderer(B,canvas,{gpuAvailable:!!navigator.gpu,location});
  if(lifecycle.disposed){renderer?.engine?.dispose();return;}
- if(!renderer)return;
+ if(!renderer){window.EmberwildLoading?.set(12,'Finding a path into the valley…');return;}
  ({engine,backend}=renderer);engine.setHardwareScalingLevel(Math.max(1,devicePixelRatio/1.4));
  scene=new B.Scene(engine);abilityEffects=createAbilityEffects(B,scene);impacts=createImpactFeedback(B,scene);dashTrail=createDashTrail(B,scene);scene.clearColor=new B.Color4(.64,.79,.8,1);scene.fogMode=B.Scene.FOGMODE_EXP2;scene.fogDensity=.006;scene.fogColor=new B.Color3(.64,.79,.8);
  ({sun,shadow}=createWorldLighting(B,scene));
@@ -89,15 +106,32 @@ async function boot(){
  camera.attachControl(canvas,true);enableRightDragOrbit(camera);camera.inputs.removeByType('ArcRotateCameraKeyboardMoveInput');camera.inputs.attached.pointers.buttons=[2];camera.inputs.attached.pointers.angularSensibilityX=450;camera.inputs.attached.pointers.angularSensibilityY=650;camera.inputs.attached.pointers.pinchToPanMaxDistance=0;camera.inputs.attached.pointers.multiTouchPanAndZoom=false;
  const glow=new B.GlowLayer('magic',scene,{blurKernelSize:24});glow.intensity=.25;
  scene.imageProcessingConfiguration.contrast=1.05;scene.imageProcessingConfiguration.exposure=1.03;
- try{sprites=await createSpriteLibrary(B,scene);}catch(err){console.info('Using procedural character fallback',err.message);}
+ window.EmberwildLoading?.set(20,'Loading characters and companions…');
+ try{sprites=await createSpriteLibrary(B,scene,{onProgress:(loaded,total)=>{if(!lifecycle.disposed)window.EmberwildLoading?.set(20+45*loaded/total,'Loading characters and companions…');}});}catch(err){console.info('Using procedural character fallback',err.message);}
  if(lifecycle.disposed){sprites?.dispose();return;}
- $('loading-status').textContent='Painting the valley…';
+ window.EmberwildLoading?.set(65,'Growing trees, gardens, and villages…');
+ // Paint the gauge before the synchronous world construction blocks this turn.
+ await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ if(lifecycle.disposed)return;
  buildZone('overworld',false);introWorldReusable=true;hero=createHero(selectedClass);hero.root.position.set(0,0,-5);fox=createFox();fox.root.position.set(1,0,-6);
+ setupTitleBackdrop();
  resize();window.addEventListener('resize',resize);new ResizeObserver(resize).observe(canvas);
- bind();$('loading-status').textContent=`A whole little adventure. Ready when you are. · ${backend}`;$('start-button').disabled=false;
- if(saved){$('continue-button').hidden=false;$('continue-button').textContent=`Continue · Level ${saved.level} ${CLASSES[saved.heroClass].name}`;}
- engine.runRenderLoop(()=>{const dt=Math.min(.04,engine.getDeltaTime()/1000);tick(dt);scene.render();});
- }catch(err){console.error(err);$('loading-status').textContent=err.message;$('start-button').disabled=true;}
+ window.EmberwildLoading?.set(85,'Preparing your first view…');
+ await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ if(lifecycle.disposed)return;
+ bind();let firstFrame=true;
+ engine.runRenderLoop(()=>{
+  try{
+   const dt=Math.min(.04,engine.getDeltaTime()/1000);tick(dt);scene.render();
+   if(firstFrame&&scene.isReady()){
+    const ready=`Ready when you are. · ${backend}`;
+    if(window.EmberwildLoading?.complete(ready)===false){engine.stopRenderLoop();return;}
+    firstFrame=false;$('loading-status').textContent=ready;$('start-button').disabled=false;
+    if(saved){$('continue-button').hidden=false;$('continue-button').disabled=false;$('continue-button').textContent=`Continue · Level ${saved.level} ${CLASSES[saved.heroClass].name}`;}
+   }
+  }catch(error){if(!firstFrame)throw error;engine.stopRenderLoop();console.error(error);window.EmberwildLoading?.fail('The first view could not load. Reload to try again.');}
+ });
+ }catch(err){console.error(err);window.EmberwildLoading?.fail(err.message);$('loading-status').textContent=err.message;$('start-button').disabled=true;}
 }
 function resize(){if(!engine||!camera)return;engine.resize();camera.fov=canvas.clientWidth/canvas.clientHeight<.8?.95:.72;}
 let transitioning=false;
@@ -115,9 +149,39 @@ function launchAdventure(continuing=false){
  sound.unlock();transition(()=>start(continuing),continuing?'Returning to your adventure…':'Following the lanterns…');
 }
 function resetCamera(){camera.alpha=-Math.PI/2-.28;camera.beta=.82;camera.radius=35;camera.inertialAlphaOffset=camera.inertialBetaOffset=camera.inertialRadiusOffset=0;}
-function resetDynamics(){worldGeneration++;hero?.combat?.cancel();abilityEffects?.clear();impacts?.clear();dashTrail?.clear();enemies.forEach(e=>{e.root.dispose();e.hpMesh?.dispose();});enemies=[];for(const list of [projectiles,effects,drops,telegraphs]){list.forEach(e=>e.mesh?.dispose());list.length=0;}floaters.forEach(f=>f.el.remove());floaters=[];respawns=[];boss=null;target=null;preferredTarget=null;targetMarker?.setEnabled(false);nearby=null;clickTarget=null;}
-function clearZoneActors(){questMarkers?.dispose();questMarkers=null;villagers?.dispose();villagers=null;}
-function setupZoneActors(){clearZoneActors();villagers=createVillagers(B,scene,world,sprites,{onGreet:item=>{if(mode!=='play')return;const words={npc:'Welcome, wanderer!',smith:'Good steel. Good day!',inn:'Room by the hearth?',cook:'Something warm?'};const el=document.createElement('div');el.className='village-greeting';el.style.visibility='hidden';el.textContent=words[item.type];$('float-layer').append(el);floaters.push({el,pos:new V(item.x,3,item.z),life:2.8,stationary:true});}});questMarkers=createQuestMarkers(B,scene,world.interactables);}
+function clearTitleBackdrop(){titleScene?.dispose();titleScene=null;}
+function setupTitleBackdrop(){
+ clearTitleBackdrop();titleScene=createTitleScene(B,scene,{sprites,world,shadow});titleClock=0;titlePaused=false;
+ camera.alpha=-Math.PI/2-.08;camera.beta=.84;camera.radius=30;camera.inertialAlphaOffset=camera.inertialBetaOffset=camera.inertialRadiusOffset=0;
+ camTarget.set(0,0,2.2);camera.target.set(0,.5,2.2);lastFacing.set(0,0,-1);
+ hero.root.position.set(-1.8,0,-5);fox.root.position.set(2,0,-5);hero.root.rotation.y=Math.PI;
+ $('title-pause').setAttribute('aria-pressed','false');$('title-pause').setAttribute('aria-label','Pause animated backdrop');$('title-pause').textContent='Ⅱ';
+}
+function titleMenu(action){
+ if(mode!=='intro')return;
+ if(action==='home'){closeModal();return;}
+ if(action==='adventure'){$('title-class-picker').focus();return;}
+ if(action==='map'){map();return;}
+ if(action==='town'){openModal('<div class="eyebrow">A PLACE TO CALL HOME</div><h2 class="modal-title">Welcome to Hearthglen.</h2><p class="dialogue">Rest by the fountain, meet Elder Rowan, and find your first quest. Bram forges your equipment, Lysa keeps the inn warm, and Mira always has something cooking.</p><p>Beyond the gates: flowering meadows, hidden treasures, enemy camps, and ancient waystones.</p><button class="secondary" data-action="close">Back to the town square</button>');return;}
+ if(action==='controls')openModal('<div class="eyebrow">YOUR ADVENTURE STARTS HERE</div><h2 class="modal-title">Find your own path.</h2><div class="title-help-keys"><kbd>WASD / Arrows</kbd><span>Move around the world</span><kbd>Space · Q · F</kbd><span>Attack, class skill, and ultimate</span><kbd>R · Shift</kbd><span>Drink a potion · Dash</span><kbd>E</kbd><span>Talk, gather, and interact</span><kbd>I · J · M</kbd><span>Inventory · Quests · Map</span><kbd>Right mouse + drag</kbd><span>Rotate the camera · Scroll to zoom</span></div><p>On touch screens, use the movement stick and action buttons. Your adventure saves on this device.</p><button class="secondary" data-action="close">Ready to explore</button>');
+}
+function resetDynamics(){clearTitleBackdrop();worldGeneration++;cancelPotion();hero?.healing?.clear();hero?.combat?.cancel();abilityEffects?.clear();impacts?.clear();dashTrail?.clear();enemies.forEach(e=>{e.root.dispose();e.hpMesh?.dispose();});enemies=[];for(const list of [projectiles,effects,drops,telegraphs]){list.forEach(e=>e.mesh?.dispose());list.length=0;}floaters.forEach(f=>f.el.remove());floaters=[];respawns=[];boss=null;target=null;preferredTarget=null;targetMarker?.setEnabled(false);nearby=null;clickTarget=null;}
+function clearZoneActors(){questMarkers?.dispose();questMarkers=null;villagers?.dispose();villagers=null;campRescues?.dispose();campRescues=null;townGuards?.dispose();townGuards=null;}
+function characterSpeech(item,text,actor,life=2.8){
+ if(mode!=='play')return;
+ if(actor?.root)for(let i=floaters.length-1;i>=0;i--){const f=floaters[i];if(f.stationary&&f.follow===actor.root){f.el.remove();floaters.splice(i,1);}}
+ const el=document.createElement('div');el.className='village-greeting';el.style.visibility='hidden';el.textContent=text;el.title=item.name||'';
+ $('float-layer').append(el);floaters.push({el,pos:new V(item.x,3,item.z),life,stationary:true,follow:actor?.root});
+}
+function campGuardCount(id){return enemies.filter(e=>e.campId===id).length;}
+function campNeedsRescue(id){return !save.rescued.includes(id)&&world.interactables.some(o=>o.type==='captive'&&o.campId===id);}
+function setupZoneActors(){
+ clearZoneActors();
+ villagers=createVillagers(B,scene,world,sprites,{onGreet:(item,actor)=>{const words={npc:'Welcome, wanderer!',smith:'Good steel. Good day!',inn:'Room by the hearth?',cook:'Something warm?'};characterSpeech(item,item.greetingText||words[item.type],actor);}});
+ campRescues=createCampRescues(B,scene,world,sprites,{rescued:save.rescued,onSay:(item,text,actor)=>characterSpeech(item,text,actor,3)});
+ townGuards=createTownGuards(B,scene,world,sprites,{onStrike:repelTownThreat,onGreet:(item,actor)=>characterSpeech(item,item.greetingText||'Hearthglen is under our protection.',actor)});
+ questMarkers=createQuestMarkers(B,scene,world.interactables);
+}
 function buildZone(next,spawnMobs=true){resetDynamics();clearZoneActors();if(world?.shadowCasters)for(const mesh of world.shadowCasters)shadow.removeShadowCaster?.(mesh);world?.dispose();zone=next;world=createWorld(B,scene,{zone,difficulty:save.ascension+1,spriteVillagers:!!sprites});world.ground.receiveShadows=true;world.ground.metadata={ground:true};setupZoneActors();
  if(world.shadowCasters)for(const mesh of world.shadowCasters)shadow.addShadowCaster(mesh);
  applyCelShading(B,scene);
@@ -133,7 +197,7 @@ function activateZone(next,spawnMobs=true){
  if(spawnMobs){for(const p of world.spawnPoints)spawnEnemy(p.kind,p.x,p.z,p.level||1,p.campId);if(next==='dungeon')spawnEnemy('boss',0,22,save.ascension+3);}
  $('boss-hud').hidden=true;save.zone=next;
 }
-function start(continuing=false){sound.unlock();save=continuing&&saved?parseSave(JSON.stringify(saved)):newGame(selectedClass);selectedClass=save.heroClass;hero.root.dispose();fox.root.dispose();hero=createHero(selectedClass);fox=createFox();
+function start(continuing=false){clearTitleBackdrop();resetCamera();sound.unlock();save=continuing&&saved?parseSave(JSON.stringify(saved)):newGame(selectedClass);selectedClass=save.heroClass;hero.root.dispose();fox.root.dispose();hero=createHero(selectedClass);fox=createFox();
  // Only the untouched title world is reusable. Later restarts need fresh
  // interactables, shrine state and encounters, just as a zone transition does.
  const reuseIntroWorld=introWorldReusable&&zone===save.zone&&save.zone==='overworld';introWorldReusable=false;
@@ -209,9 +273,9 @@ function killEnemy(e){sound.play('enemy-pop');const p=e.root.position.clone();en
  if(e.kind==='boss'){boss=null;$('boss-hud').hidden=true;save.bosses++;save.ascension++;if(save.quest>=2)save.quest=Math.max(save.quest,3);save.gold+=250;save.totalGold+=250;save.shards+=5;const crown={id:'crown-'+save.bosses,name:'Crown of the First Dawn',slot:'charm',rarity:'legendary',level:save.level,damage:8+save.ascension*3,hp:30,crit:.08,price:200};grantItem(crown);sound.play('win');ring(p,8,'#f1c56e',2);persist();const victoryGeneration=worldGeneration;setTimeout(()=>{if(mode==='play'&&worldGeneration===victoryGeneration)openModal(`<div class="eyebrow">THE HOLLOW KING HAS FALLEN</div><h2 class="modal-title">A new dawn.</h2><p>The old crown remembers the sunlight. The valley will remember you.</p><div class="reward-hero">♛</div><h3>Crown of the First Dawn</h3><p class="rarity-legendary">Legendary relic added to your bag</p><div class="stats-grid"><div><b>+250</b><small>GOLD</small></div><div><b>+5</b><small>EMBER SHARDS</small></div><div><b>${save.ascension}</b><small>ASCENSION UNLOCKED</small></div></div><button class="primary" data-action="home">Return to Hearthglen →</button><button class="secondary" data-action="close">Keep exploring</button>`);},700);}
  else if(zone==='overworld')respawns.push({kind:e.kind,campId:e.campId,x:e.home.x,z:e.home.z,level:e.level,time:e.campId?180:55});
  if(e.campId&&!enemies.some(other=>other.campId===e.campId))questEvent({type:'camp',id:e.campId});
- if(e.campId&&!enemies.some(other=>other.campId===e.campId)&&!clearedCamps.has(e.campId)){const camp=world.camps.find(c=>c.id===e.campId);clearedCamps.add(e.campId);toast((camp?.name||'Enemy camp')+' cleared','The guarded cache is yours. More creatures may return later.','⚑');sound.play('quest');}
+ if(e.campId&&!enemies.some(other=>other.campId===e.campId)&&!clearedCamps.has(e.campId)){const camp=world.camps.find(c=>c.id===e.campId);clearedCamps.add(e.campId);toast((camp?.name||'Enemy camp')+' cleared',campNeedsRescue(e.campId)?'Free the captive, then collect the guarded cache.':'The guarded cache is yours. More creatures may return later.','⚑');sound.play('quest');}
  if(save.quest===1&&save.kills===6){toast('A promise kept','Return to Elder Rowan for your reward.','!');sound.play('quest');}burst(p.add(new V(0,1,0)),e.cfg.color,12);}
-function hurt(n){if(invincible>0||mode!=='play'||paused)return;const st=stats(save);const taken=Math.max(1,Math.round(n*(1-st.armor)*(shieldTime>0?.35:1)));save.hp=Math.max(0,save.hp-taken);invincible=.55;inCombat=5;shake=.25;floating('-'+taken,hero.root.position.add(new V(0,2.3,0)),'#ff988c',true);sound.play(shieldTime>0?'shield-block':'hurt');if(save.hp<=0){hero?.combat?.cancel();abilityEffects?.clear();impacts?.clear();dashTrail?.clear();mode='dead';sound.play('death');save.gold=Math.max(0,save.gold-Math.floor(save.gold*.1));openModal('<div class="eyebrow">EVERY HERO STUMBLES</div><h2 class="modal-title">The embers remain.</h2><p>Pip brought you back from the edge. You dropped a few coins, but kept your gear and progress.</p><button class="primary" data-action="revive">Wake up in Hearthglen →</button>',false);}}
+function hurt(n){if(invincible>0||mode!=='play'||paused)return;const st=stats(save);const taken=Math.max(1,Math.round(n*(1-st.armor)*(shieldTime>0?.35:1)));save.hp=Math.max(0,save.hp-taken);invincible=.55;inCombat=5;shake=.25;floating('-'+taken,hero.root.position.add(new V(0,2.3,0)),'#ff988c',true);sound.play(shieldTime>0?'shield-block':'hurt');if(save.hp<=0){cancelPotion();hero?.healing?.clear();hero?.combat?.cancel();abilityEffects?.clear();impacts?.clear();dashTrail?.clear();mode='dead';sound.play('death');save.gold=Math.max(0,save.gold-Math.floor(save.gold*.1));openModal('<div class="eyebrow">EVERY HERO STUMBLES</div><h2 class="modal-title">The embers remain.</h2><p>Pip brought you back from the edge. You dropped a few coins, but kept your gear and progress.</p><button class="primary" data-action="revive">Wake up in Hearthglen →</button>',false);}}
 function fire(from,to,damage,color,speed=20,enemy=false,pierce=false,style='bolt'){
  const dir=to.subtract(from);dir.y=0;dir.normalize();let mesh;
  if(style==='arrow'){
@@ -230,13 +294,13 @@ function beginHeroAction(kind,facing,release,{center=null}={}){
  if(hero.combat){hero.combat.update(0,facing,camera.alpha,{hop:hero.locomotion?.hop||0});if(hero.combat.attack({kind,facing,onRelease})){sound.play(charge);if(special)windupFX=abilityEffects?.charge({heroClass:cls,kind,root:hero.root,center:center||hero.root.position.clone(),windup:hero.combat.state.windup});}}
  else onRelease(hero.root.position.add(new V(0,1,0)));
 }
-function attack(){if(mode!=='play'||paused||attackCD>0||hero.combat?.busy)return;const cls=save.heroClass,c=CLASSES[cls],e=nearestEnemy(c.range);attackCD=c.rate;attackAnim=.5;const st=stats(save),critical=Math.random()<st.crit,n=st.damage*(critical?1.8:1);if(e){lastFacing=e.root.position.subtract(hero.root.position);lastFacing.y=0;lastFacing.normalize();hero.root.rotation.y=Math.atan2(lastFacing.x,lastFacing.z);}
+function attack(){if(mode!=='play'||paused||attackCD>0||hero.potion?.active||hero.combat?.busy)return;const cls=save.heroClass,c=CLASSES[cls],e=nearestEnemy(c.range);attackCD=c.rate;attackAnim=.5;const st=stats(save),critical=Math.random()<st.crit,n=st.damage*(critical?1.8:1);if(e){lastFacing=e.root.position.subtract(hero.root.position);lastFacing.y=0;lastFacing.normalize();hero.root.rotation.y=Math.atan2(lastFacing.x,lastFacing.z);}
  const facing=lastFacing.clone();beginHeroAction('basic',facing,muzzle=>{
  if(cls==='knight'){const p=hero.root.position.add(facing.scale(1.5));slash(hero.root.position,facing);for(const foe of [...enemies])if(enemyDistance(foe,p)<2.3)damageEnemy(foe,n,critical);}
  else{fire(muzzle,muzzle.add(facing.scale(12)),n,c.color,cls==='ranger'?28:19,false,false,cls==='ranger'?'arrow':'bolt');burst(muzzle,c.color,3);}
  });}
 function skill(ultimate=false){
- if(mode!=='play'||paused||hero.combat?.active&&hero.combat.state.kind!=='basic')return;
+ if(mode!=='play'||paused||hero.potion?.active||hero.combat?.active&&hero.combat.state.kind!=='basic')return;
  const cd=ultimate?ultCD:skillCD,cost=ultimate?40:20;if(cd>0)return;if(save.mana<cost){toast('Not enough mana','Mana regenerates while you explore.');return;}
  // A requested special can take priority over a basic wind-up, never another special.
  if(hero.combat?.active)hero.combat.cancel();
@@ -252,8 +316,19 @@ function skill(ultimate=false){
  else{const yaw=Math.atan2(facing.x,facing.z);for(const offset of [-.16,0,.16]){const aim=muzzle.add(new V(Math.sin(yaw+offset)*17,0,Math.cos(yaw+offset)*17));fire(muzzle,aim,st.damage*1.6,'#cce8a9',26,false,true,'arrow');}}}
  },{center});
 }
-function dash(){if(mode!=='play'||paused||dashCD>0)return;dashCD=2.4;dashTime=.2;invincible=.36;burst(hero.root.position.add(new V(0,.5,0)),CLASSES[save.heroClass].color,10);sound.play('dash');clickTarget=null;}
-function potion(){if(mode!=='play'||paused)return;if(save.potions<1){toast('No potions left','Buy some from the inn or brew them with herbs.');return;}const st=stats(save);if(save.hp>=st.maxHp&&save.mana>=st.maxMana)return;save.potions--;save.hp=Math.min(st.maxHp,save.hp+st.maxHp*.6);save.mana=Math.min(st.maxMana,save.mana+35);ring(hero.root.position,2,'#a2deb6',.8);sound.play('heal');floating('+HEAL',hero.root.position.add(new V(0,2,0)),'#abe1b3');persist();}
+function dash(){if(mode!=='play'||paused||dashCD>0)return;cancelPotion();dashCD=2.4;dashTime=.2;invincible=.36;burst(hero.root.position.add(new V(0,.5,0)),CLASSES[save.heroClass].color,10);sound.play('dash');clickTarget=null;}
+function potion(){
+ if(mode!=='play'||paused||hero.potion.active||dashTime>0)return;
+ if(save.potions<1){toast('No potions left','Buy some from the inn or brew them with herbs.');return;}
+ const st=stats(save);if(save.hp>=st.maxHp&&save.mana>=st.maxMana)return;
+ if(hero.combat?.active)return;
+ const actor=hero,generation=worldGeneration;hero.potionFacing=lastFacing.clone();hero.root.rotation.y=Math.atan2(lastFacing.x,lastFacing.z);
+ if(actor.potion.start({facing:hero.potionFacing,onSip:()=>{
+  if(hero!==actor||generation!==worldGeneration||mode!=='play'||save.potions<1)return;
+  const current=stats(save);save.potions--;save.hp=Math.min(current.maxHp,save.hp+current.maxHp*.6);save.mana=Math.min(current.maxMana,save.mana+35);
+  actor.healing.trigger();sound.play('potion-gulp');sound.play('heal');floating('+HEAL',actor.root.position.add(new V(0,2,0)),'#abe1b3');persist();updateHUD();
+ }})){attackAnim=0;potionEquipment();sound.play('potion-open');}
+}
 function warning(e,pos,r,delay,damage,kind='slam'){
  if(e.elite)sound.play('boss-warning');
  const mesh=new B.TransformNode('attack warning',scene);mesh.position.set(pos.x,.1,pos.z);
@@ -262,12 +337,22 @@ function warning(e,pos,r,delay,damage,kind='slam'){
  const clock=B.MeshBuilder.CreateTorus('danger countdown',{diameter:r*2,thickness:.045,tessellation:48},scene);clock.parent=mesh;clock.position.y=.025;clock.material=mat('#ffe1b3',1);clock.isPickable=false;clock.scaling.setAll(.04);
  telegraphs.push({mesh,fill,clock,pos:pos.clone(),r,time:delay,max:delay,damage,kind,source:e});
 }
+function repelTownThreat(actor,e){
+ if(mode!=='play'||paused||zone!=='overworld'||!townGuards?.actors.includes(actor)||actor.root.isDisposed()||!actor.root.isEnabled()||!enemies.includes(e)||e.root.isDisposed()||e.hp<=0||e.elite||e.kind==='boss')return;
+ const dx=e.root.position.x-actor.root.position.x,dz=e.root.position.z-actor.root.position.z;
+ if(Math.hypot(dx,dz)>GUARD_REACH+.1||dx*actor.outward.x+dz*actor.outward.z<-.25)return;
+ e.guardRepel=.85;e.guardPush=actor.outward.clone();e.windup=0;e.attackPos=null;e.cooldown=Math.max(e.cooldown,1.8);e.slow=Math.max(e.slow,1.1);
+ for(let i=telegraphs.length-1;i>=0;i--)if(telegraphs[i].source===e){telegraphs[i].mesh.dispose();telegraphs.splice(i,1);}
+ moveEntity(e.root,actor.outward.scale(1.7),e.profile.collisionRadius);
+ if(dist(hero.root.position,actor.root.position)<20){impacts?.spawn(e.root.position.add(new V(0,e.profile.impactHeight,0)),'#ffe3a0');sound.play('shield-block');}
+}
 function updateEnemies(dt){
  for(const e of [...enemies]){e.cooldown-=dt;e.slow=Math.max(0,e.slow-dt);const p=e.root.position,d=dist(p,hero.root.position),safe=world.isSafe(hero.root.position.x,hero.root.position.z);
  e.presence?.update(dt,{windup:e.windup,enraged:e.hp/e.maxHp<.35});
  e.hurt=Math.max(0,e.hurt-dt);
  if(!sprites&&e.kind==='slime'){e.body.position.y=.6+Math.sin(t*5+e.phase)*.08;e.body.scaling.y=1.2+Math.sin(t*5+e.phase)*.06;}
  if(e.kind==='boss'){$('boss-hud').hidden=d>23;$('boss-name').textContent=`THE HOLLOW KING · ASCENSION ${save.ascension+1}`;$('boss-fill').style.width=clamp(e.hp/e.maxHp*100,0,100)+'%';}
+ if(e.guardRepel>0){e.guardRepel=Math.max(0,e.guardRepel-dt);e.facing.copyFrom(e.guardPush);moveEntity(e.root,e.guardPush.scale(dt*e.speed),e.profile.collisionRadius);continue;}
  const active=!safe&&(!e.campId||dist(p,e.home)<23&&dist(hero.root.position,e.home)<26)&&(d<(e.elite?25:13)||e.hp<e.maxHp&&d<24);e.barRoot.setEnabled(active&&e.hp<e.maxHp);
  if(!active){e.windup=Math.max(0,e.windup-dt);if(dist(p,e.home)>1){e.facing.copyFrom(e.home).subtractInPlace(p).normalize();moveEntity(e.root,e.facing.scale(dt*e.speed*.6),e.profile.returnRadius);}continue;}inCombat=Math.max(inCombat,.2);
  const desired=e.kind==='mushroom'?6:e.elite?5:1.8;e.facing.copyFrom(hero.root.position).subtractInPlace(p);e.facing.y=0;if(e.facing.lengthSquared()>.001)e.facing.normalize();if(!sprites)e.root.rotation.y=Math.atan2(e.facing.x,e.facing.z);
@@ -292,6 +377,15 @@ function moveEntity(root,delta,radius=.45){const p=resolveMovement(root.position
 function openModal(html,closable=true){paused=true;keys.clear();touch.x=touch.z=0;clickTarget=null;$('modal-content').innerHTML=(closable?'<button class="modal-close" aria-label="Close panel" data-action="close">×</button>':'')+html;$('modal').hidden=false;$('modal-content').querySelector('button')?.focus();}
 function closeModal(){if(mode==='dead')return;paused=false;fishing=null;$('modal').hidden=true;canvas.focus();persist();}
 function talk(){if(mode!=='play'||paused)return;if(!nearby){toast('A little closer…','Move near a person, plant, chest, or waystone, then press E.');return;}const o=nearby;villagers?.greet(o);
+ if(o.type==='captive'){
+  if(zone!=='overworld'||!world.interactables.includes(o)||o.mesh.isDisposed()||!o.mesh.isEnabled()||dist(hero.root.position,o)>3.4||save.rescued.includes(o.campId))return;
+  const camp=world.camps.find(c=>c.id===o.campId);if(!camp)return;
+  const guards=campGuardCount(camp.id);
+  if(guards){toast('Someone needs your help',`Defeat ${guards} remaining camp guard${guards===1?'':'s'}, then return to free ${o.name.split(' · ')[0]}.`,'♡');return;}
+  if(!campRescues?.release(o))return;
+  save.rescued.push(camp.id);persist();
+  toast('A traveler rescued',`${o.name.split(' · ')[0]} is heading to safety.`, '♡');sound.play('quest');nearby=null;updateInteraction();return;
+ }
  if(o.type==='npc'){
  let text,button;
  if(save.quest===0){text='Ah, a new face! I’m Rowan. Our waystones have gone dark, and the woodland creatures have grown restless. Help six of them find their peace, and keep the ember shards you discover. Pip here has already decided to come along.';button='<button class="primary" data-action="accept">I’ll help the valley →</button>';}
@@ -377,10 +471,10 @@ function drawMap(c,full=false){const ctx=c.getContext('2d'),w=c.width,h=c.height
   ctx.fillStyle='#56929c';ctx.beginPath();ctx.ellipse(px(-33),py(-5),Math.abs(px(8)-px(0)),Math.abs(py(7)-py(0)),0,0,Math.PI*2);ctx.fill();
   for(const route of world.mapRoutes){ctx.strokeStyle=route.stone?'#e2d6af':'#a38f69';ctx.lineWidth=full?(route.stone?3.2:1.8):1;ctx.beginPath();route.points.forEach(([x,z],i)=>i?ctx.lineTo(px(x),py(z)):ctx.moveTo(px(x),py(z)));ctx.stroke();}
   for(const landmark of world.landmarks){if(world.camps.some(c=>c.id===landmark.id))continue;ctx.fillStyle='#d5ccab';ctx.font=`${full?13:9}px Georgia`;ctx.fillText('✦',px(landmark.x)-4,py(landmark.z)+4);if(full&&landmark.kind!=='town')labels.push({text:landmark.name,x:px(landmark.x)+7,y:py(landmark.z)-7,size:10,priority:1,color:'#d5ccab'});}
-  for(const camp of world.camps){const count=enemies.filter(e=>e.campId===camp.id).length;ctx.fillStyle=count?'#e29b79':'#aed39c';ctx.font=`bold ${full?17:11}px Georgia`;ctx.fillText('⚑',px(camp.x)-5,py(camp.z)+5);if(full)labels.push({text:camp.name+(count?' · '+count:' · clear'),x:px(camp.x)-24,y:py(camp.z)-14,size:11,priority:4,color:count?'#e29b79':'#aed39c'});}
+  for(const camp of world.camps){const count=enemies.filter(e=>e.campId===camp.id).length;ctx.fillStyle=count?'#e29b79':'#aed39c';ctx.font=`bold ${full?17:11}px Georgia`;ctx.fillText('⚑',px(camp.x)-5,py(camp.z)+5);if(full)labels.push({text:camp.name+(count?' · '+count:' · clear')+(campNeedsRescue(camp.id)?' · captive':''),x:px(camp.x)-24,y:py(camp.z)-14,size:11,priority:4,color:count?'#e29b79':'#aed39c'});}
  }
  for(const e of enemies){ctx.fillStyle=e.elite?'#efbd70':'#d88875';ctx.beginPath();ctx.arc(px(e.root.position.x),py(e.root.position.z),e.elite?5:full?3:1.8,0,Math.PI*2);ctx.fill();}
- for(const o of world.interactables){if(o.type==='herb'||o.type==='chest'&&save.chests.includes(o.id))continue;const giverState=questGiverState(o);ctx.fillStyle=giverState==='available'||giverState==='ready'?'#ffe05d':o.type==='shrine'?(save.shrines.includes(o.id)?'#aee7bd':'#92c6e4'):o.type==='portal'?'#c4a4e3':o.type==='npc'?'#f5d47e':'#d8caa9';ctx.font=`${full?18:11}px Georgia`;const glyph=giverState==='ready'?'?':giverState==='available'?'!':o.type==='shrine'?'◆':o.type==='portal'?'◉':o.type==='chest'?'▪':'·';ctx.fillText(glyph,px(o.x)-4,py(o.z)+4);if(full&&['shrine','portal','npc','fishing','smith','inn','cook'].includes(o.type)){const short={npc:'Rowan',fishing:'Pond',smith:'Bram · Smith',inn:'Lysa · Inn',cook:'Mira · Kitchen'},offset=o.type==='smith'?[-16,17]:o.type==='inn'?[8,17]:o.type==='fishing'?[-25,-10]:[8,0];labels.push({text:short[o.type]||o.name||o.type,x:px(o.x)+offset[0],y:py(o.z)+offset[1],size:11,priority:short[o.type]?3:2,color:'#efead4'});}}
+ for(const o of world.interactables){if(o.type==='herb'||o.type==='chest'&&save.chests.includes(o.id)||o.type==='captive'&&save.rescued.includes(o.campId))continue;const giverState=questGiverState(o);ctx.fillStyle=giverState==='available'||giverState==='ready'?'#ffe05d':o.type==='shrine'?(save.shrines.includes(o.id)?'#aee7bd':'#92c6e4'):o.type==='portal'?'#c4a4e3':o.type==='npc'?'#f5d47e':'#d8caa9';ctx.font=`${full?18:11}px Georgia`;const glyph=giverState==='ready'?'?':giverState==='available'?'!':o.type==='shrine'?'◆':o.type==='portal'?'◉':o.type==='chest'?'▪':'·';ctx.fillText(glyph,px(o.x)-4,py(o.z)+4);if(full&&['shrine','portal','npc','fishing','smith','inn','cook'].includes(o.type)){const short={npc:'Rowan',fishing:'Pond',smith:'Bram · Smith',inn:'Lysa · Inn',cook:'Mira · Kitchen'},offset=o.type==='smith'?[-16,17]:o.type==='inn'?[8,17]:o.type==='fishing'?[-25,-10]:[8,0];labels.push({text:short[o.type]||o.name||o.type,x:px(o.x)+offset[0],y:py(o.z)+offset[1],size:11,priority:short[o.type]?3:2,color:'#efead4'});}}
  if(full){
   const occupied=[];
   labels.sort((a,b)=>b.priority-a.priority);
@@ -398,7 +492,7 @@ function drawMap(c,full=false){const ctx=c.getContext('2d'),w=c.width,h=c.height
   }
  }
  ctx.fillStyle='#fff4c7';ctx.beginPath();ctx.arc(px(hero.root.position.x),py(hero.root.position.z),full?6:4,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#25473a';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#ddcfaa';ctx.font='10px Arial';ctx.fillText('N',w/2-3,13);}
-function map(){openModal(`<div class="eyebrow">${zone==='dungeon'?'THE HOLLOW SANCTUM':'THE EMBER VALLEY'}</div><h2 class="modal-title">There’s more beyond the path.</h2><div class="map-wrap"><canvas id="large-map" width="520" height="460" aria-label="World map"></canvas></div><p class="map-legend">● You &nbsp; ◆ Waystone &nbsp; ◉ Gate &nbsp; ! Quest giver &nbsp; ? Reward &nbsp; <span style="color:#d88875">●</span> Creatures &nbsp; ⚑ Camp &nbsp; ✦ Landmark</p><button class="secondary" data-action="travel">Return to Hearthglen ${inCombat>0?'· unavailable in combat':''}</button>`);drawMap($('large-map'),true);}
+function map(){openModal(`<div class="eyebrow">${zone==='dungeon'?'THE HOLLOW SANCTUM':'THE EMBER VALLEY'}</div><h2 class="modal-title">There’s more beyond the path.</h2><div class="map-wrap"><canvas id="large-map" width="520" height="460" aria-label="World map"></canvas></div><p class="map-legend">● You &nbsp; ◆ Waystone &nbsp; ◉ Gate &nbsp; ! Quest giver &nbsp; ? Reward &nbsp; <span style="color:#d88875">●</span> Creatures &nbsp; ⚑ Camp &nbsp; ✦ Landmark</p>${mode==='intro'?'<button class="secondary" data-action="close">Back to the start menu</button>':`<button class="secondary" data-action="travel">Return to Hearthglen ${inCombat>0?'· unavailable in combat':''}</button>`}`);drawMap($('large-map'),true);}
 function startFishing(){fishing={start:t};openModal('<div class="eyebrow">MOONMIRROR POND</div><h2 class="modal-title">Something took the bait.</h2><p>Reel in when the golden marker is inside the green zone.</p><div class="fish-track"><div class="fish-zone"></div><div class="fish-marker" id="fish-marker"></div></div><button class="primary" data-action="catch">Reel it in! · Space</button><p class="muted">A quiet moment can still be an adventure.</p>');sound.play('fish');}
 function catchFish(){if(!fishing)return;const n=(Math.sin((t-fishing.start)*2.3)+1)/2;if(n>.35&&n<.65){save.fish++;questEvent({type:'fish'});awardXP(20);sound.play('loot');toast('A silverfin!','Cook it for experience, or sell it at the camp kitchen.','♧');}else toast('It slipped away','Try again. Watch the golden marker.');closeModal();}
 function goHome(){closeModal();mode='play';save.gathered=save.bosses>0?[]:save.gathered;buildZone('overworld');save.hp=stats(save).maxHp;save.mana=stats(save).maxMana;invincible=2;announce('Hearthglen','A LITTLE LIGHT IN THE WILD');sound.play('portal');persist();}
@@ -424,17 +518,17 @@ function modalAction(action){
  if(action==='cook-fish'){if(save.fish<1)toast('You need a silverfin','Try fishing at Moonmirror Pond.');else{save.fish--;save.hp=stats(save).maxHp;awardXP(50);sound.play('heal');cook();}}
  if(action==='sell-fish'){if(save.fish<1)toast('No fish to sell');else{save.fish--;save.gold+=25;save.totalGold+=25;sound.play('coin');cook();}}
  if(action==='dungeon'){closeModal();buildZone('dungeon');save.hp=stats(save).maxHp;save.mana=stats(save).maxMana;announce('The Hollow Sanctum',`ASCENSION ${save.ascension+1} · MIND THE RED CIRCLES`);sound.play('portal');}
- if(action==='home')goHome();if(action==='travel'){if(inCombat>0)toast('Lose your pursuers first');else goHome();}
+ if(action==='home'&&mode!=='intro')goHome();if(action==='travel'&&mode!=='intro'){if(inCombat>0)toast('Lose your pursuers first');else goHome();}
  if(action==='bag')bag();if(action==='catch')catchFish();
  if(action==='sound'){toggleSound();settings();}
  if(action==='auto'){save.settings.autoAttack=!save.settings.autoAttack;settings();}
  if(action==='quality'){save.settings.quality=save.settings.quality==='low'?'high':'low';applyQuality();settings();}
- if(action==='title'){persist();closeModal();mode='intro';$('hud').hidden=true;$('intro').hidden=false;$('continue-button').hidden=false;$('continue-button').textContent=`Continue · Level ${save.level} ${CLASSES[save.heroClass].name}`;sound.setEnabled(false);}
+ if(action==='title'){persist();closeModal();mode='intro';resetDynamics();if(zone!=='overworld')buildZone('overworld',false);setupTitleBackdrop();$('hud').hidden=true;$('intro').hidden=false;$('continue-button').hidden=false;$('continue-button').textContent=`Continue · Level ${saved.level} ${CLASSES[saved.heroClass].name}`;titleMusic=false;$('title-sound').setAttribute('aria-pressed','false');$('title-sound').setAttribute('aria-label','Enable title music');sound.setEnabled(false);}
  updateHUD();persist();
 }
 function applyQuality(){const low=save.settings.quality==='low';scene.shadowsEnabled=!low;engine.setHardwareScalingLevel(low?1.8:Math.max(1,devicePixelRatio/1.4));resize();}
 
-function updateHUD(){if(!hero)return;const st=stats(save),c=CLASSES[save.heroClass],q=trackedQuestInfo(save);$('hero-name').textContent=c.name;$('portrait').innerHTML=`<span style="font-size:25px;color:${c.color}">${c.icon}</span>`;$('level').textContent=save.level;$('hp-fill').style.width=clamp(save.hp/st.maxHp*100,0,100)+'%';$('hp-text').textContent=`${Math.ceil(save.hp)} / ${st.maxHp}`;$('mana-fill').style.width=clamp(save.mana/st.maxMana*100,0,100)+'%';$('mana-text').textContent=`${Math.floor(save.mana)} / ${st.maxMana}`;$('xp-fill').style.width=clamp(save.xp/xpNeeded(save.level)*100,0,100)+'%';$('coins').textContent=save.gold;$('shards').textContent=save.shards;$('quest-title').textContent=q.title;$('quest-body').textContent=q.text;$('quest-body').style.whiteSpace='pre-line';$('attack-name').textContent=c.attack;$('skill-name').textContent=c.skill;$('ultimate-name').textContent=c.ultimate;$('potion-count').textContent=save.potions;
+function updateHUD(){if(!hero)return;const st=stats(save),c=CLASSES[save.heroClass],q=trackedQuestInfo(save);$('hero-name').textContent=c.name;$('portrait').innerHTML=`<span style="font-size:25px;color:${c.color}">${c.icon}</span>`;$('level').textContent=save.level;$('hp-fill').style.width=clamp(save.hp/st.maxHp*100,0,100)+'%';$('hp-text').textContent=`${Math.ceil(save.hp)} / ${st.maxHp}`;$('mana-fill').style.width=clamp(save.mana/st.maxMana*100,0,100)+'%';$('mana-text').textContent=`${Math.floor(save.mana)} / ${st.maxMana}`;$('xp-fill').style.width=clamp(save.xp/xpNeeded(save.level)*100,0,100)+'%';$('coins').textContent=save.gold;$('shards').textContent=save.shards;$('quest-title').textContent=q.title;$('quest-body').textContent=q.text;$('quest-body').style.whiteSpace='pre-line';$('attack-name').textContent=c.attack;$('skill-name').textContent=c.skill;$('ultimate-name').textContent=c.ultimate;$('potion-count').textContent=save.potions;$('potion-button').disabled=!!hero.potion?.active;$('potion-button').setAttribute('aria-busy',String(!!hero.potion?.active));
  for(const [id,cd]of [['skill',skillCD],['ultimate',ultCD],['dash',dashCD]]){$(id+'-cd').textContent=cd>0?Math.ceil(cd)+'s':'';$(id+'-button').classList.toggle('on-cooldown',cd>0);}
  drawMap($('minimap'));
  const soundButton=$('sound-button');soundButton.setAttribute('aria-pressed',String(save.settings.sound));soundButton.setAttribute('aria-label',save.settings.sound?'Mute music and sound':'Enable music and sound');$('sound-state').textContent=save.settings.sound?'ON':'OFF';
@@ -456,10 +550,10 @@ function collectDrops(dt){
 }
 function updateProjectiles(dt){for(let i=projectiles.length-1;i>=0;i--){const p=projectiles[i];p.life-=dt;p.mesh.position.addInPlace(p.velocity.scale(dt));if(p.enemy){if(dist(p.mesh.position,hero.root.position)<.85){hurt(p.damage);p.life=0;}}else{for(const e of [...enemies]){if(!p.hit.has(e)&&dist(p.mesh.position,e.root.position)<e.profile.projectileRadius){damageEnemy(e,p.damage);p.hit.add(e);if(!p.pierce){p.life=0;break;}}}}if(p.life<=0){p.mesh.dispose();projectiles.splice(i,1);}}}
 function updateEffects(dt){for(let i=effects.length-1;i>=0;i--){const e=effects[i];e.life-=dt;if(e.kind==='dust'){e.mesh.position.addInPlace(e.velocity.scale(dt));e.mesh.scaling.scaleInPlace(1+dt*3);e.mesh.visibility=clamp(e.life/e.max,0,1);}else if(e.kind==='ring'){e.mesh.scaling.scaleInPlace(1+dt*1.8);e.mesh.visibility=clamp(e.life/e.max,0,1);}else{e.mesh.position.addInPlace(e.velocity.scale(dt));e.velocity.y-=dt*7;e.mesh.scaling.scaleInPlace(Math.pow(.1,dt));}if(e.life<=0){e.mesh.dispose();effects.splice(i,1);}}
- for(let i=floaters.length-1;i>=0;i--){const f=floaters[i];f.life-=dt;if(!f.stationary)f.pos.y+=dt*.9;const p=B.Vector3.Project(f.pos,B.Matrix.Identity(),scene.getTransformMatrix(),camera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight()));f.el.style.visibility=p.z>=0&&p.z<=1?'visible':'hidden';f.el.style.left=p.x/engine.getRenderWidth()*canvas.clientWidth+'px';f.el.style.top=p.y/engine.getRenderHeight()*canvas.clientHeight+'px';f.el.style.opacity=Math.min(1,f.life*2);if(f.life<=0){f.el.remove();floaters.splice(i,1);}}
+ for(let i=floaters.length-1;i>=0;i--){const f=floaters[i];if(f.follow){if(f.follow.isDisposed()){f.el.remove();floaters.splice(i,1);continue;}f.pos.copyFrom(f.follow.position);f.pos.y+=3;}if(!(f.stationary&&paused))f.life-=dt;if(!f.stationary)f.pos.y+=dt*.9;const p=B.Vector3.Project(f.pos,B.Matrix.Identity(),scene.getTransformMatrix(),camera.viewport.toGlobal(engine.getRenderWidth(),engine.getRenderHeight()));f.el.style.visibility=p.z>=0&&p.z<=1?'visible':'hidden';f.el.style.left=p.x/engine.getRenderWidth()*canvas.clientWidth+'px';f.el.style.top=p.y/engine.getRenderHeight()*canvas.clientHeight+'px';f.el.style.opacity=Math.min(1,f.life*2);if(f.life<=0){f.el.remove();floaters.splice(i,1);}}
 }
-function getRegion(){const p=hero.root.position;if(zone==='dungeon')return ['The Hollow Sanctum','ASCENSION '+(save.ascension+1)];if(world.isSafe(p.x,p.z))return ['Hearthglen','SANCTUARY · THE EMBER VALLEY'];const camp=world.camps.find(c=>dist(c,p)<c.radius+3);if(camp){const guards=enemies.filter(e=>e.campId===camp.id).length;return [camp.name,guards?`ENEMY CAMP · ${guards} GUARDS`:'CAMP CLEARED · SEARCH THE CACHE'];}const landmark=world.landmarks.find(l=>dist(l,p)<(l.radius||6)+2);if(landmark)return [landmark.name,landmark.description||'A LANDMARK OF THE VALLEY'];if(p.z>52)return ['The Highmeadow','ANCIENT STONES UNDER OPEN SKIES'];if(p.z<-36)return ['Sunwheel Downs','WIND THROUGH THE GOLDEN GRASS'];if(p.z>34)return ['The Forgotten Gate','RUINS OF THE FIRST DAWN'];if(p.x<-17)return ['Moonmirror Grove','WHERE THE WATER KEEPS ITS SECRETS'];if(p.x>18&&p.z<0)return ['Sunpetal Fields','WILD MAGIC STIRS'];if(p.x>18)return ['Whisperwood','FOLLOW THE LIGHT BETWEEN THE LEAVES'];return ['The Wandering Meadow','BEYOND THE VILLAGE WALLS'];}
-function updateInteraction(){nearby=null;let n=3.4;for(const o of world.interactables){if(!o.mesh.isEnabled())continue;const d=dist(hero.root.position,o);if(d<n){n=d;nearby=o;}}const el=$('interact-prompt');if(nearby){el.hidden=false;el.innerHTML=`<kbd>E</kbd> ${esc(nearby.type==='herb'?'Gather '+nearby.name:nearby.type==='chest'?'Open treasure':nearby.name||nearby.type)}`;}else el.hidden=true;$('interact-button').classList.toggle('available',!!nearby);}
+function getRegion(){const p=hero.root.position;if(zone==='dungeon')return ['The Hollow Sanctum','ASCENSION '+(save.ascension+1)];if(world.isSafe(p.x,p.z))return ['Hearthglen','SANCTUARY · THE EMBER VALLEY'];const camp=world.camps.find(c=>dist(c,p)<c.radius+3);if(camp){const guards=enemies.filter(e=>e.campId===camp.id).length;return [camp.name,guards?`ENEMY CAMP · ${guards} GUARDS`:campNeedsRescue(camp.id)?'CAMP CLEARED · FREE THE CAPTIVE':'CAMP CLEARED · SEARCH THE CACHE'];}const landmark=world.landmarks.find(l=>dist(l,p)<(l.radius||6)+2);if(landmark)return [landmark.name,landmark.description||'A LANDMARK OF THE VALLEY'];if(p.z>52)return ['The Highmeadow','ANCIENT STONES UNDER OPEN SKIES'];if(p.z<-36)return ['Sunwheel Downs','WIND THROUGH THE GOLDEN GRASS'];if(p.z>34)return ['The Forgotten Gate','RUINS OF THE FIRST DAWN'];if(p.x<-17)return ['Moonmirror Grove','WHERE THE WATER KEEPS ITS SECRETS'];if(p.x>18&&p.z<0)return ['Sunpetal Fields','WILD MAGIC STIRS'];if(p.x>18)return ['Whisperwood','FOLLOW THE LIGHT BETWEEN THE LEAVES'];return ['The Wandering Meadow','BEYOND THE VILLAGE WALLS'];}
+function updateInteraction(){nearby=null;let n=3.4;for(const o of world.interactables){if(!o.mesh.isEnabled())continue;const d=dist(hero.root.position,o);if(d<n){n=d;nearby=o;}}const el=$('interact-prompt');if(nearby){el.hidden=false;el.innerHTML=`<kbd>E</kbd> ${esc(nearby.type==='herb'?'Gather '+nearby.name:nearby.type==='chest'?'Open treasure':nearby.type==='captive'?(campGuardCount(nearby.campId)?'Help ':'Free ')+nearby.name.split(' · ')[0]:nearby.name||nearby.type)}`;}else el.hidden=true;$('interact-button').classList.toggle('available',!!nearby);}
 function updateCompanion(dt){
  const desired=hero.root.position.add(new V(1.3,0,-1.2)),delta=desired.subtract(fox.root.position);delta.y=0;
  const moving=delta.length()>1;
@@ -468,14 +562,23 @@ function updateCompanion(dt){
  else{fox.root.position.y=Math.sin(t*9)*.04;fox.tail.rotation.z=Math.sin(t*5)*.3;}
  petCD-=dt;if(petCD<=0){const e=nearestEnemy(9);if(e){fire(fox.root.position.add(new V(0,.7,0)),e.root.position,8+save.level*2,'#f3c37c',16);petCD=3.5;}}
 }
-function tick(dt){t+=dt;world?.update(dt,t);if(!hero)return;
+function tick(dt){if(mode==='intro'&&titlePaused)dt=0;t+=dt;world?.update(dt,t);if(!hero)return;
+ if(mode==='intro'){
+  titleClock+=dt;titleScene?.update(dt,camera.alpha);
+  hero.root.position.set(-1.8+Math.sin(titleClock*.17)*.45,0,-5+Math.cos(titleClock*.17)*.2);
+  if(hero.sprite){hero.locomotion=sprites.animate(hero.sprite,dt,{moving:titleClock%6>4.6,pace:.65});hero.sprite.visibility=1;hero.halo.visibility=1;}
+  else{hero.locomotion={hop:Math.sin(titleClock*2)*.025,sx:1,sy:1,roll:0};}
+  const oldFox=fox.root.position.clone(),a=titleClock*.24;fox.root.position.set(1.9+Math.sin(a)*.9,0,-4.9+Math.cos(a)*.5);
+  if(fox.sprite){const delta=fox.root.position.subtract(oldFox);delta.y=0;if(delta.lengthSquared()>.00001)fox.facing.copyFrom(delta).normalize();const motion=sprites.animate(fox.sprite,dt,{moving:true,pace:.55});fox.halo.scaling.setAll(1-motion.hop*.55);fox.halo.visibility=1-motion.hop*.7;}else{fox.tail.rotation.z=Math.sin(titleClock*4)*.25;}
+ }
+
  const visualPause=paused||mode!=='play';if(!visualPause){save.playtime+=dt;saveTime+=dt;inCombat=Math.max(0,inCombat-dt);attackCD=Math.max(0,attackCD-dt);skillCD=Math.max(0,skillCD-dt);ultCD=Math.max(0,ultCD-dt);dashCD=Math.max(0,dashCD-dt);dashTime=Math.max(0,dashTime-dt);invincible=Math.max(0,invincible-dt);shieldTime=Math.max(0,shieldTime-dt);attackAnim=Math.max(0,attackAnim-dt);comboTime-=dt;if(comboTime<=0)combo=0;
  const st=stats(save);save.mana=Math.min(st.maxMana,save.mana+dt*5);if(world.isSafe(hero.root.position.x,hero.root.position.z))save.hp=Math.min(st.maxHp,save.hp+dt*3);
  const move=new V((keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0)+touch.x,0,(keys.has('KeyW')||keys.has('ArrowUp')?1:0)-(keys.has('KeyS')||keys.has('ArrowDown')?1:0)+touch.z);
  if(move.lengthSquared()>.01){clickTarget=null;const a=camera.alpha??-Math.PI/2,x=move.x,z=move.z;move.x=-Math.sin(a)*x-Math.cos(a)*z;move.z=Math.cos(a)*x-Math.sin(a)*z;}else if(clickTarget){const delta=clickTarget.subtract(hero.root.position);delta.y=0;if(delta.length()<.5)clickTarget=null;else move.copyFrom(delta).normalize();}
- if(move.lengthSquared()>1)move.normalize();const moving=move.lengthSquared()>.01;if(moving&&dashTime<=0){lastFacing.copyFrom(move).normalize();if(attackAnim<=0)hero.root.rotation.y=Math.atan2(move.x,move.z);}
+ if(move.lengthSquared()>1)move.normalize();const moving=move.lengthSquared()>.01;if(moving&&dashTime<=0){lastFacing.copyFrom(move).normalize();if(attackAnim<=0&&!hero.potion?.active)hero.root.rotation.y=Math.atan2(move.x,move.z);}
  const old=hero.root.position.clone();moveEntity(hero.root,(dashTime>0?lastFacing.scale(25):move.scale(st.speed)).scale(dt));if(dashTime>0)dashTrail?.spawn(old,hero.root.position);if(clickTarget&&dist(old,hero.root.position)<.003)clickTarget=null;
- if(hero.sprite){const motion=sprites.animate(hero.sprite,dt,{moving:dist(old,hero.root.position)>.002,pace:dashTime>0?1.3:1});hero.locomotion=motion;hero.body.position.y=motion.hop;hero.sprite.scaling.set(motion.sx,motion.sy,1);hero.sprite.rotation.z=motion.roll;hero.halo.scaling.setAll(1-motion.hop*.5);hero.halo.visibility=1-motion.hop*.7;hero.sprite.visibility=invincible>0?.55+Math.sin(t*45)*.3:1;if(motion.landed&&moving)landingDust(hero.root.position,.8);}else{hero.body.position.y=.85+(moving?Math.sin(t*12)*.07:Math.sin(t*2)*.025);hero.feet.forEach((f,i)=>{f.position.z=moving?Math.sin(t*12+i*Math.PI)*.22:0;});hero.arms.forEach((a,i)=>{a.rotation.x=attackAnim>0?-Math.sin(attackAnim*12):moving?Math.sin(t*12+i*Math.PI)*.25:0;});hero.cape.rotation.x=-.16-(moving?.15:0);hero.weapon.rotation.x=attackAnim>0?-Math.sin(attackAnim*12)*.6:0;hero.body.visibility=invincible>0?.45+Math.sin(t*45)*.3:1;}
+ if(hero.sprite){const motion=sprites.animate(hero.sprite,dt,{moving:dist(old,hero.root.position)>.002,pace:dashTime>0?1.3:1});hero.locomotion=motion;hero.body.position.y=motion.hop;hero.sprite.scaling.set(motion.sx,motion.sy,1);hero.sprite.rotation.z=motion.roll;hero.halo.scaling.setAll(1-motion.hop*.5);hero.halo.visibility=1-motion.hop*.7;hero.sprite.visibility=invincible>0?.55+Math.sin(t*45)*.3:1;if(motion.landed&&moving)landingDust(hero.root.position,.8);}else{hero.body.position.y=.85+(moving?Math.sin(t*12)*.07:Math.sin(t*2)*.025);hero.feet.forEach((f,i)=>{f.position.z=moving?Math.sin(t*12+i*Math.PI)*.22:0;});hero.arms.forEach((a,i)=>{a.rotation.x=attackAnim>0?-Math.sin(attackAnim*12):moving?Math.sin(t*12+i*Math.PI)*.25:0;});hero.cape.rotation.x=-.16-(moving?.15:0);hero.weapon.rotation.x=attackAnim>0?-Math.sin(attackAnim*12)*.6:0;hero.body.visibility=invincible>0?.45+Math.sin(t*45)*.3:1;hero.locomotion={hop:hero.body.position.y-.85,sx:1,sy:1,roll:0};}
  target=nearestEnemy(CLASSES[save.heroClass].range);if(keys.has('Space')||save.settings.autoAttack&&target)attack();
  updateEnemies(dt);updateProjectiles(dt);collectDrops(dt);updateCompanion(dt);updateInteraction();updateTargetFeedback();
  if(sprites)for(const enemy of enemies){const moving=dist(enemy.root.position,enemy.visualPosition)>.001;updateActorMotion(enemy,enemy.body,dt,moving,enemy.slow>0?.5:1);enemy.visualPosition.copyFrom(enemy.root.position);}
@@ -483,27 +586,37 @@ function tick(dt){t+=dt;world?.update(dt,t);if(!hero)return;
  if(saveTime>12){saveTime=0;persist();}
  }
  updateEffects(dt);if(fishing){const n=(Math.sin((t-fishing.start)*2.3)+1)/2;const m=$('fish-marker');if(m)m.style.left=(n*100)+'%';}
- const desired=mode==='intro'?new V(2,0,2):hero.root.position;camTarget.copyFrom(V.Lerp(camTarget,desired,1-Math.exp(-dt*5)));const introShift=mode==='intro'?-5:0;camera.target.copyFrom(new V(camTarget.x+introShift,.5,camTarget.z));if(!paused&&mode==='play'){if(keys.has('KeyZ'))camera.alpha-=dt*1.4;if(keys.has('KeyC'))camera.alpha+=dt*1.4;}if(shake>0){shake-=dt;camera.target.x+=(Math.random()-.5)*shake;}
+ const desired=mode==='intro'?new V(0,0,2.2):hero.root.position;camTarget.copyFrom(V.Lerp(camTarget,desired,1-Math.exp(-dt*5)));camera.target.copyFrom(new V(camTarget.x,.5,camTarget.z));if(!paused&&mode==='play'){if(keys.has('KeyZ'))camera.alpha-=dt*1.4;if(keys.has('KeyC'))camera.alpha+=dt*1.4;}if(shake>0){shake-=dt;camera.target.x+=(Math.random()-.5)*shake;}
  sun.position.set(camTarget.x-36,40,camTarget.z-27.2);
 
  if(fox.sprite)sprites.face(fox.sprite,fox.facing,camera.alpha);
- villagers?.update(dt,hero.root.position,camera.alpha,paused);questMarkers?.update(dt,questGiverState,mode==='play'&&zone==='overworld',paused);
+ villagers?.update(dt,hero.root.position,camera.alpha,mode==='intro'?titlePaused:paused,mode==='play');
+ campRescues?.update(dt,hero.root.position,camera.alpha,{paused:paused||mode!=='play',enabled:mode==='play'&&zone==='overworld',guardCount:campGuardCount});questMarkers?.update(dt,questGiverState,mode==='play'&&zone==='overworld',paused);
+ townGuards?.update(dt,hero.root.position,camera.alpha,{paused:paused||mode!=='play',enabled:mode==='play'&&zone==='overworld',enemies});
  abilityEffects?.update(dt,{paused:visualPause});impacts?.update(dt,{paused:visualPause});dashTrail?.update(dt,{paused:visualPause});
  hero.combat?.update(dt,lastFacing,camera.alpha,{paused:visualPause,hop:hero.locomotion?.hop||0,moving:keys.size>0||!!clickTarget});
- if(hero.sprite){const base=hero.locomotion||{hop:0,sx:1,sy:1,roll:0},motion=hero.combat?.bodyMotion||{hop:0,sx:1,sy:1,lean:0,spin:0};hero.body.position.y=base.hop+motion.hop;hero.sprite.scaling.set(base.sx*motion.sx,base.sy*motion.sy,1);hero.sprite.rotation.z=base.roll+motion.lean;const aim=hero.combat?.active?(hero.actionFacing||lastFacing):lastFacing,yaw=Math.atan2(aim.x,aim.z)+motion.spin;sprites.face(hero.sprite,new V(Math.sin(yaw),0,Math.cos(yaw)),camera.alpha);hero.halo.scaling.setAll(Math.max(.5,1-(base.hop+motion.hop)*.5));}
+ hero.potion?.update(dt,hero.potionFacing||lastFacing,camera.alpha,{paused:paused||mode!=='play',hop:hero.locomotion?.hop||0});potionEquipment();
+ hero.healing?.update(dt,{paused:paused||mode!=='play'});
+ if(hero.sprite){const base=hero.locomotion||{hop:0,sx:1,sy:1,roll:0},motion=(hero.potion?.active?hero.potion.bodyMotion:hero.combat?.bodyMotion)||{hop:0,sx:1,sy:1,lean:0,spin:0};hero.body.position.y=base.hop+motion.hop;hero.sprite.scaling.set(base.sx*motion.sx,base.sy*motion.sy,1);hero.sprite.rotation.z=base.roll+motion.lean;const aim=hero.potion?.active?(hero.potionFacing||lastFacing):hero.combat?.active?(hero.actionFacing||lastFacing):lastFacing,yaw=Math.atan2(aim.x,aim.z)+motion.spin;sprites.face(hero.sprite,new V(Math.sin(yaw),0,Math.cos(yaw)),camera.alpha);hero.halo.scaling.setAll(Math.max(.5,1-(base.hop+motion.hop)*.5));}
+ else{const motion=hero.potion?.bodyMotion||{hop:0,sx:1,sy:1,lean:0};hero.body.position.y=.85+(hero.locomotion?.hop||0)+motion.hop;hero.body.scaling.set(hero.restBodyScale.x*motion.sx,hero.restBodyScale.y*motion.sy,hero.restBodyScale.z);hero.body.rotation.z=motion.lean;}
 
- if(sprites)for(const enemy of enemies)sprites.face(enemy.body,enemy.facing,camera.alpha);
+ if(hero.halo)hero.halo.position.y=contactShadowHeight(hero.root);if(fox.halo)fox.halo.position.y=contactShadowHeight(fox.root);
+ if(sprites)for(const enemy of enemies){enemy.halo.position.y=contactShadowHeight(enemy.root);sprites.face(enemy.body,enemy.facing,camera.alpha);}
  hudTime+=dt;if(hudTime>.12&&mode!=='intro'){hudTime=0;if(mode==='play'&&!paused&&zone==='overworld')for(const landmark of world.landmarks)if(landmark.kind!=='town'&&dist(hero.root.position,landmark)<(landmark.radius||6))questEvent({type:'visit',id:landmark.id});updateHUD();const region=getRegion();$('zone-name').textContent=region[0];$('zone-sub').textContent=region[1];if(lastZone!==region[0]){if(lastZone&&mode==='play')announce(region[0],region[1]);lastZone=region[0];}}
  sound.update(zone,inCombat>0&&!paused&&mode==='play');
 }
 function bind(){
+ document.querySelectorAll('[data-title-action]').forEach(btn=>btn.onclick=()=>titleMenu(btn.dataset.titleAction));
+ $('title-sound').onclick=()=>{titleMusic=!titleMusic;sound.unlock();sound.setEnabled(titleMusic);$('title-sound').setAttribute('aria-pressed',String(titleMusic));$('title-sound').setAttribute('aria-label',titleMusic?'Mute title music':'Enable title music');};
+ $('title-pause').onclick=()=>{titlePaused=!titlePaused;$('title-pause').setAttribute('aria-pressed',String(titlePaused));$('title-pause').setAttribute('aria-label',titlePaused?'Resume animated backdrop':'Pause animated backdrop');$('title-pause').textContent=titlePaused?'▶':'Ⅱ';};
+
  document.querySelectorAll('[data-class]').forEach(btn=>btn.onclick=()=>{selectedClass=btn.dataset.class;document.querySelectorAll('[data-class]').forEach(b=>{b.classList.toggle('selected',b===btn);b.setAttribute('aria-pressed',b===btn?'true':'false');});const p=hero.root.position.clone();hero.root.dispose();hero=createHero(selectedClass);hero.root.position.copyFrom(p);sound.play('click');});
  $('start-button').onclick=()=>{if(saved){openModal('<div class="eyebrow">A NEW CHAPTER</div><h2 class="modal-title">Begin a new adventure?</h2><p>Your saved adventure will be replaced when you begin. You can continue it instead from the title screen.</p><button class="primary" data-action="new-game">Begin new adventure</button><button class="secondary" data-action="close">Keep my current adventure</button>');}else launchAdventure();};$('continue-button').onclick=()=>launchAdventure(true);$('transition-retry').onclick=()=>location.reload();
  $('attack-button').onclick=attack;$('skill-button').onclick=()=>skill();$('ultimate-button').onclick=()=>skill(true);$('dash-button').onclick=dash;$('potion-button').onclick=potion;$('interact-button').onclick=talk;
  $('bag-button').onclick=bag;$('journal-button').onclick=()=>journal();$('quest-log-button').onclick=()=>journal();$('settings-button').onclick=settings;$('map-button').onclick=map;$('minimap').onclick=map;$('sound-button').onclick=toggleSound;
  $('camera-left').onclick=()=>{camera.alpha-=Math.PI/4;};$('camera-right').onclick=()=>{camera.alpha+=Math.PI/4;};$('camera-reset').onclick=resetCamera;
  $('modal').addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;const action=el.dataset.action;if(action==='new-game'){launchAdventure();return;}if(action){if(['dungeon','home','travel','revive'].includes(action))transition(()=>modalAction(action),action==='dungeon'?'Opening the Hollow Sanctum…':'Following the lanterns home…');else modalAction(action);return;}if(el.dataset.equip){equip(save,el.dataset.equip);const st=stats(save);save.hp=Math.min(save.hp,st.maxHp);sound.play('loot');bag();persist();}if(el.dataset.sell){const i=save.inventory.findIndex(g=>g.id===el.dataset.sell);if(i>=0){save.gold+=save.inventory[i].price;save.inventory.splice(i,1);sound.play('coin');bag();persist();}}});
- window.addEventListener('keydown',e=>{if(transitioning)return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)&&mode==='play')e.preventDefault();if(e.target.tagName==='INPUT')return;if(mode==='intro')return;if(paused){if(e.code==='Escape'&&mode!=='dead')closeModal();if(e.code==='Space'&&fishing){e.preventDefault();catchFish();}return;}keys.add(e.code);if(e.repeat)return;switch(e.code){case'ShiftLeft':case'ShiftRight':dash();break;case'KeyQ':case'Digit1':skill();break;case'KeyF':case'Digit2':skill(true);break;case'KeyR':potion();break;case'KeyE':talk();break;case'KeyI':bag();break;case'KeyJ':journal();break;case'KeyM':map();break;case'KeyT':treeStyles();break;case'Escape':case'KeyP':settings();break;}});
+ window.addEventListener('keydown',e=>{if(transitioning)return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)&&mode==='play')e.preventDefault();if(e.target.tagName==='INPUT')return;if(mode==='intro'){if(e.code==='Escape'&&!$('modal').hidden)closeModal();return;}if(paused){if(e.code==='Escape'&&mode!=='dead')closeModal();if(e.code==='Space'&&fishing){e.preventDefault();catchFish();}return;}keys.add(e.code);if(e.repeat)return;switch(e.code){case'ShiftLeft':case'ShiftRight':dash();break;case'KeyQ':case'Digit1':skill();break;case'KeyF':case'Digit2':skill(true);break;case'KeyR':potion();break;case'KeyE':talk();break;case'KeyI':bag();break;case'KeyJ':journal();break;case'KeyM':map();break;case'KeyT':treeStyles();break;case'Escape':case'KeyP':settings();break;}});
  window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();touch.x=touch.z=0;if(mode==='play'&&!paused)settings();});document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();persist();if(mode==='play'&&!paused)settings();}});window.addEventListener('beforeunload',persist);
  canvas.addEventListener('contextmenu',e=>e.preventDefault());
  const orbitTouches=new Map();let pinchLength=0;

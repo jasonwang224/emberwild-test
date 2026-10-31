@@ -1,8 +1,11 @@
 import {advanceBounce} from './animation.js';
 // Original HD2D sprite atlas: crisp pixels, alpha-tested silhouettes, real 3D placement.
 export function directionFrame(direction,alpha){const right=-Math.sin(alpha)*direction.x+Math.cos(alpha)*direction.z,toward=Math.cos(alpha)*direction.x+Math.sin(alpha)*direction.z;return (Math.round(Math.atan2(right,toward)/(Math.PI/4))+8)%8;}
-export async function createSpriteLibrary(B,scene){
- const sourceTextures=new Set();let loadFailed=false,loadError;
+export async function createSpriteLibrary(B,scene,{onProgress=()=>{}}={}){
+ const sourceTextures=new Set();let loadFailed=false,loadError,completed=0;
+ // Count logical assets after decoding/parsing, not network attempts. A failed
+ // WebP followed by a successful PNG still completes just one atlas.
+ function completeAsset(value){if(!loadFailed)onProgress(++completed,22);return value;}
  function loadTexture(url,message){return new Promise((resolve,reject)=>{
    // Track sources before callbacks run, including a synchronous cache hit.
    const texture=new B.Texture(url,scene,true,true,B.Texture.NEAREST_SAMPLINGMODE,
@@ -16,7 +19,7 @@ export async function createSpriteLibrary(B,scene){
    return loadTexture('./assets/'+name+'.webp',message).catch(error=>{
      if(loadFailed)throw loadError||error;
      return loadTexture('./assets/'+name+'.png',message);
-   });
+   }).then(completeAsset);
  }
  try{
  // Begin every independent image and manifest request in the same turn. No
@@ -28,7 +31,7 @@ export async function createSpriteLibrary(B,scene){
    Promise.all(kinds.map(async kind=>{
      const [texture,manifest]=await Promise.all([
        loadAtlas(kind+'-directions',kind+' atlas unavailable'),
-       fetch('./assets/'+kind+'-directions.json').then(r=>{if(!r.ok)throw Error(kind+' manifest unavailable');return r.json();})
+       fetch('./assets/'+kind+'-directions.json').then(r=>{if(!r.ok)throw Error(kind+' manifest unavailable');return r.json();}).then(completeAsset)
      ]);
      if(loadFailed){texture.dispose();return null;}
      texture.hasAlpha=true;return [kind,{texture,manifest}];

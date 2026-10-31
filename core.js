@@ -10,7 +10,7 @@ export const CLASSES={
 export const RARITIES=[{name:'common',color:'#c6d0bf',mult:1},{name:'uncommon',color:'#80cd91',mult:1.35},{name:'rare',color:'#90bafa',mult:1.8},{name:'legendary',color:'#f1c56e',mult:2.5}];
 export const xpNeeded=level=>80+level*45;
 export function newGame(heroClass='knight'){
- return {version:1,heroClass,level:1,xp:0,gold:35,shards:0,herbs:0,fish:0,potions:5,kills:0,quest:0,quests:newQuestState(),shrines:[],chests:[],gathered:[],inventory:[],equipment:{weapon:null,armor:null,charm:null},forge:0,ascension:0,bosses:0,totalGold:0,playtime:0,zone:'overworld',x:0,z:-5,hp:CLASSES[heroClass].hp,mana:CLASSES[heroClass].mana,settings:{sound:true,autoAttack:false,quality:'high',treeStyle:'current'},achievements:[]};
+ return {version:1,heroClass,level:1,xp:0,gold:35,shards:0,herbs:0,fish:0,potions:5,kills:0,quest:0,quests:newQuestState(),shrines:[],chests:[],gathered:[],rescued:[],inventory:[],equipment:{weapon:null,armor:null,charm:null},forge:0,ascension:0,bosses:0,totalGold:0,playtime:0,zone:'overworld',x:0,z:-5,hp:CLASSES[heroClass].hp,mana:CLASSES[heroClass].mana,settings:{sound:true,autoAttack:false,quality:'high',treeStyle:'current'},achievements:[]};
 }
 export function stats(s){const c=CLASSES[s.heroClass];const gear=Object.values(s.equipment).filter(Boolean);return {maxHp:c.hp+(s.level-1)*16+gear.reduce((a,g)=>a+(g.hp||0),0),maxMana:c.mana+(s.level-1)*5,damage:c.damage+(s.level-1)*4+s.forge*4+gear.reduce((a,g)=>a+(g.damage||0),0),speed:c.speed+gear.reduce((a,g)=>a+(g.speed||0),0),armor:Math.min(.55,gear.reduce((a,g)=>a+(g.armor||0),0)),crit:.08+gear.reduce((a,g)=>a+(g.crit||0),0)};}
 export function addXP(s,value){s.xp+=value;let gained=0;while(s.xp>=xpNeeded(s.level)){s.xp-=xpNeeded(s.level);s.level++;gained++;}return gained;}
@@ -34,6 +34,7 @@ export function parseSave(raw){
  s.inventory=Array.isArray(x.inventory)?x.inventory.filter(validItem).slice(0,100):[];
  for(const k of ['weapon','armor','charm'])if(validItem(x.equipment?.[k])&&x.equipment[k].slot===k)s.equipment[k]=x.equipment[k];
  for(const k of ['shrines','chests','gathered','achievements'])s[k]=Array.isArray(x[k])?x[k].filter(v=>typeof v==='string').slice(0,200):[];
+ s.rescued=Array.isArray(x.rescued)?[...new Set(x.rescued.filter(id=>['cinderwatch','thornhide','moonshard'].includes(id)))]:[];
  s.quests=normalizeQuestState(x.quests);
  s.settings={...s.settings,...(x.settings&&typeof x.settings==='object'?x.settings:{})};s.settings.treeStyle=normalizeTreeStyle(s.settings.treeStyle);return s;
  }catch{return null;}

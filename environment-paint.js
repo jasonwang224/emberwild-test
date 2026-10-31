@@ -70,9 +70,15 @@ function painter(context,kind) {
     for(let j=0;j<5;j++)stroke(12+random()*100,12+random()*100,4+random()*9,1,j%2?'#bbc2aa':'#f5ecd4');
     stroke(3,24,4,2,'#a8b29c');stroke(118,92,7,2,'#a8b29c');
   } else if(kind==='cobbles') {
-    p.fillStyle='#817d74';p.fillRect(0,0,size,size);
-    // A periodic Voronoi paving shares every joint. Offset sites, a few merged
-    // regions and small split stones break both axes without leaving dark holes.
+    p.fillStyle='#665e4e';p.fillRect(0,0,size,size);
+    // Paint the earth first: only the irregular joints and worn corners expose
+    // these warm soil strokes, occasional cooler damp patches and sparse moss.
+    for(let j=0;j<64;j++)patch(random()*size,random()*size,5+random()*14,2+random()*8,pick(['#766a55','#5e594b','#8d7d60','#746b57','#6b654f']));
+    for(let j=0;j<16;j++)patch(random()*size,random()*size,3+random()*8,2+random()*5,pick(['#556246','#697349','#7b8054']));
+    for(let j=0;j<100;j++)stroke(random()*size,random()*size,2+random()*3,1,j%3?'#8f8064':'#4f4d40');
+    // Periodic fitted stones retain the bright faces, but the clearance varies
+    // by shared edge. The same stone pair always agrees on its dirt joint,
+    // including across the texture seam; this is not a uniform outline stroke.
     const sites=[];
     for(let row=0;row<9;row++)for(let col=0;col<8;col++){
       const x=(col+(row%2)*.22)*size/8+(random()-.5)*5,y=(row+.25)*size/9+(random()-.5)*4;
@@ -90,16 +96,23 @@ function painter(context,kind) {
     }
     for(let s=0;s<sites.length;s++){
       const [x,y]=sites[s];let raw=[[x-64,y-64],[x+64,y-64],[x+64,y+64],[x-64,y+64]];
-      for(const q of sites)for(const dx of [-128,0,128])for(const dy of [-128,0,128]){
+      const borders=[];
+      for(let t=0;t<sites.length;t++)for(const dx of [-128,0,128])for(const dy of [-128,0,128]){
+        const q=sites[t];
         const qx=q[0]+dx,qy=q[1]+dy,nx=qx-x,ny=qy-y;
         if(nx*nx+ny*ny<1e-6||nx*nx+ny*ny>6400)continue;
-        raw=clip(raw,nx,ny,(qx*qx+qy*qy-x*x-y*y)/2);
+        const limit=(qx*qx+qy*qy-x*x-y*y)/2;
+        raw=clip(raw,nx,ny,limit);
+        const hash=Math.sin((Math.min(s,t)+1)*127.1+(Math.max(s,t)+1)*311.7)*43758.5453,variation=hash-Math.floor(hash);
+        const gap=.70+variation*1.45+(variation>.87?(variation-.87)*8:0);
+        borders.push({nx,ny,limit:limit-Math.hypot(nx,ny)*gap*.5});
       }
       const cx=raw.reduce((n,v)=>n+v[0],0)/raw.length,cy=raw.reduce((n,v)=>n+v[1],0)/raw.length;
-      const face=raw.map(([a,b])=>[cx+(a-cx)*.92,cy+(b-cy)*.92]),outline=[];
+      let face=raw;for(const b of borders)face=clip(face,b.nx,b.ny,b.limit);
+      const outline=[];
       for(let k=0;k<face.length;k++){
-        const v=face[k],prev=face[(k+face.length-1)%face.length],next=face[(k+1)%face.length],chip=.065+random()*.045;
-        outline.push([v[0]+(prev[0]-v[0])*chip,v[1]+(prev[1]-v[1])*chip],[v[0]+(next[0]-v[0])*chip,v[1]+(next[1]-v[1])*chip]);
+        const v=face[k],prev=face[(k+face.length-1)%face.length],next=face[(k+1)%face.length],chip=.08+random()*.12+(s%11===0?.08:0);
+        outline.push([v[0]+(prev[0]-v[0])*chip,v[1]+(prev[1]-v[1])*chip],[v[0]+(next[0]-v[0])*chip*.85,v[1]+(next[1]-v[1])*chip*.85]);
       }
       const mood=Math.sin(cx*.055)+Math.cos(cy*.043),palette=mood>.5?['#fff0d4','#f3e4c9','#f3e1d1']:mood<-.6?['#dce0c8','#e4e1cf','#ece8d3']:['#fbefd5','#ede5ce','#f4e9d7'];
       polygon(outline,pick(palette));

@@ -339,6 +339,16 @@ export function createAudio() {
       case 'level': chord([62, 66, 69, 74, 78, 81], t, 0.105, 0.17, 1.2); break;
       case 'quest': chord([67, 71, 74, 79], t, 0.15, 0.16, 1.05); break;
       case 'heal': chord([69, 74, 78], t, 0.13, 0.12, 1.15); tone(280, t, 0.7, 0.06, 'sine', effects, 560, 0.25); break;
+      case 'potion-open':
+        tone(620, t, .07, .075, 'sine', effects, 1120);
+        breath(t, .055, .045, 1500, 'bandpass');
+        break;
+      case 'potion-gulp':
+        [0, .16].forEach((delay, i) => {
+          tone(340-i*35, t+delay, .12, .07, 'sine', effects, 150+i*25);
+          tone(170+i*20, t+delay+.055, .08, .045, 'sine', effects, 360);
+        });
+        break;
       case 'portal': chord([62, 69, 74, 81, 86], t, 0.09, 0.1, 1.6); breath(t, 0.8, 0.14, 1000); break;
       case 'boss': tone(NOTE(26), t, 1.8, 0.3, 'sine', effects, null, 0.12); tone(NOTE(33), t + 0.15, 1.4, 0.17, 'triangle', effects, null, 0.2); break;
       case 'win': chord([62, 66, 69, 74, 78, 81, 86], t, 0.16, 0.18, 1.6); break;

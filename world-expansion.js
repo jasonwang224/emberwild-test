@@ -131,7 +131,7 @@ export function buildWorldExpansion(api){
   // A mining site is defined by hard slate terraces, rust earth and a tall timber hoist.
   {
     const {x,z}=CAMP_LAYOUT[0];
-    slab('quarry-earth',x,z,9.7,M.campSoil,.88);slab('quarry-workyard',x+.6,z-.2,7.8,M.campSoil,.85,.06);
+    // The workyard is seated into the meadow by buildCampTerrain.
     for(let j=0;j<9;j++){
       const a=-1.9+j*.24,bx=x+Math.sin(a)*8.7,bz=z+Math.cos(a)*7.8;
       const h=1.4+(j%3)*.54,face=chippedBlock(box('expansion-quarry-scarp',bx,h*.5,bz,2.7,h,2.1,M.campSlate),2.7,h,2.1,j);face.rotation.y=-a+.09*Math.sin(j);
@@ -174,7 +174,7 @@ export function buildWorldExpansion(api){
   // The pack's stockade has a wide west entrance, split log palisades and green canvas.
   {
     const {x,z}=CAMP_LAYOUT[1];
-    slab('stockade-dirt',x,z,9.7,M.campSoil,.93);slab('stockade-trampled',x-.8,z,7.4,M.campSoil,.92,.06);
+    // Uneven trampled earth and grass margins are authored by buildCampTerrain.
     for(let j=0;j<42;j++){
       const a=j*Math.PI*2/42,dx=Math.sin(a)*8.4,dz=Math.cos(a)*8.1;
       if(dx<-5.9&&Math.abs(dz)<4.5||dx>6.8&&Math.abs(dz)<2.9)continue;
@@ -203,7 +203,7 @@ export function buildWorldExpansion(api){
   // A shallow, traversable ruin rather than another tent circle: arches frame the moon crystal.
   {
     const {x,z}=CAMP_LAYOUT[2];
-    slab('moon-court',x,z,9.3,M.campRuins,.95);slab('moon-paving',x,z,8.6,M.campPaving,.95,.064);
+    // Broken paving and grass encroachment are authored by buildCampTerrain.
     for(let j=0;j<30;j++){
       const a=j*2.399,r=2.8+random()*4.7;
       const tile=box('expansion-moon-broken-slab',x+Math.sin(a)*r,.12,z+Math.cos(a)*r,range(.7,1.2),.09,range(.55,.95),j%4?M.campRuins:M.moss);tile.rotation.y=a*.4;
