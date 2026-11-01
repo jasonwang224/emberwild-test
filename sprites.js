@@ -1,15 +1,21 @@
-import {advanceBounce} from './animation.js?v=e2609980';
+import {advanceBounce} from './animation.js?v=17317200';
 // Original HD2D sprite atlas: crisp pixels, alpha-tested silhouettes, real 3D placement.
 export function directionFrame(direction,alpha){const right=-Math.sin(alpha)*direction.x+Math.cos(alpha)*direction.z,toward=Math.cos(alpha)*direction.x+Math.sin(alpha)*direction.z;return (Math.round(Math.atan2(right,toward)/(Math.PI/4))+8)%8;}
+// Measured alpha bounds of the separate 4-by-2 town-watch sheet. Each view
+// retains its own silhouette and is planted at the same foot anchor.
+const GUARD_ATLAS={width:1774,height:887,frames:[
+ [33,49,372,353],[480,49,365,354],[913,50,367,353],[1370,49,367,351],
+ [33,484,372,352],[481,483,365,353],[918,483,376,355],[1367,482,370,356]
+]};
 export async function createSpriteLibrary(B,scene,{onProgress=()=>{}}={}){
- const sourceTextures=new Set();let loadFailed=false,loadError,completed=0;
+ const sourceTextures=new Set();let loadFailed=false,loadError,completed=0,disposed=false,guardAtlas=null;
  // Count logical assets after decoding/parsing, not network attempts. A failed
  // WebP followed by a successful PNG still completes just one atlas.
  function completeAsset(value){if(!loadFailed)onProgress(++completed,22);return value;}
  function loadTexture(url,message){return new Promise((resolve,reject)=>{
    // Track sources before callbacks run, including a synchronous cache hit.
    const texture=new B.Texture(url,scene,true,true,B.Texture.NEAREST_SAMPLINGMODE,
-     ()=>queueMicrotask(()=>{if(loadFailed){texture.dispose();reject(loadError);}else resolve(texture);}),
+     ()=>queueMicrotask(()=>{if(loadFailed||disposed){texture.dispose();reject(loadError||new Error('Sprite library disposed'));}else resolve(texture);}),
      (_m,e)=>queueMicrotask(()=>{texture.dispose();sourceTextures.delete(texture);reject(e||new Error(message));}));
    sourceTextures.add(texture);
  });}
@@ -21,6 +27,12 @@ export async function createSpriteLibrary(B,scene,{onProgress=()=>{}}={}){
      return loadTexture('./assets/'+name+'.png',message);
    }).then(completeAsset);
  }
+ // This optional outfit must never extend the startup gate or turn a missing
+ // guard image into a missing player/creature library. Posts use their matching
+ // procedural uniform until it is ready, then replace it without moving.
+ const guardReady=loadTexture('./assets/town-watch-directions.webp','Town-watch atlas unavailable')
+  .catch(error=>{if(loadFailed||disposed)throw loadError||error;return loadTexture('./assets/town-watch-directions.png','Town-watch atlas unavailable');})
+  .then(texture=>{if(disposed){texture.dispose();return false;}guardAtlas=texture;texture.hasAlpha=true;return true;}).catch(()=>false);
  try{
  // Begin every independent image and manifest request in the same turn. No
  // character -> hero -> creature download waterfall before the title is ready.
@@ -51,6 +63,25 @@ export async function createSpriteLibrary(B,scene,{onProgress=()=>{}}={}){
  scene.setRenderingAutoClearDepthStencil(1,false,false,false);mesh.onDisposeObservable.add(()=>{m.dispose(true,true);ink.dispose(false,false);if(heroMaterials.get(cls)===m)heroMaterials.delete(cls);});return mesh;}
  const creatures=new Map(creatureSources);
  const creatureMaterials=new Set();
+ const guardMaterials=new Set();
+ function createGuard(parent,height=2.4){
+  if(disposed||!guardAtlas)return null;
+  const texture=guardAtlas.clone();texture.hasAlpha=true;texture.wrapU=texture.wrapV=B.Texture.CLAMP_ADDRESSMODE;
+  texture.updateSamplingMode(B.Texture.NEAREST_SAMPLINGMODE);
+  const m=new B.StandardMaterial('town-watch-uniform',scene);m.diffuseTexture=texture;m.useAlphaFromDiffuseTexture=true;
+  m.emissiveColor=new B.Color3(.78,.78,.78);m.diffuseColor=new B.Color3(.22,.22,.22);m.specularColor=B.Color3.Black();m.backFaceCulling=false;m.transparencyMode=B.Material.MATERIAL_ALPHATEST;m.alphaCutOff=.5;guardMaterials.add(m);
+  const mesh=B.MeshBuilder.CreatePlane('eight-direction-town-watch',{size:height,updatable:true},scene);
+  mesh.parent=parent;mesh.position.y=.04;mesh.billboardMode=B.Mesh.BILLBOARDMODE_ALL;mesh.material=m;mesh.isPickable=false;
+  mesh.metadata={directional:true,direction:0,guard:true,height,vertices:mesh.getVerticesData(B.VertexBuffer.PositionKind).slice()};
+  setGuardFrame(mesh);
+  mesh.onDisposeObservable.add(()=>{m.dispose(true,true);guardMaterials.delete(m);});return mesh;
+ }
+ function setGuardFrame(mesh){
+  const {height,vertices,direction}=mesh.metadata,[x,y,w,h]=GUARD_ATLAS.frames[direction],texture=mesh.material.diffuseTexture;
+  texture.uScale=w/GUARD_ATLAS.width;texture.vScale=h/GUARD_ATLAS.height;texture.uOffset=x/GUARD_ATLAS.width;texture.vOffset=1-(y+h)/GUARD_ATLAS.height;
+  const positions=vertices.slice();for(let i=0;i<positions.length;i+=3){positions[i]*=w/h;positions[i+1]+=height/2;}
+  mesh.updateVerticesData(B.VertexBuffer.PositionKind,positions);mesh.refreshBoundingInfo();
+ }
  function createCreature(kind,parent,height){
    const source=creatures.get(kind),texture=source.texture.clone(),manifest=source.manifest;
    texture.hasAlpha=true;texture.wrapU=texture.wrapV=B.Texture.CLAMP_ADDRESSMODE;
@@ -80,8 +111,8 @@ export async function createSpriteLibrary(B,scene,{onProgress=()=>{}}={}){
    if(data.manifest){mesh.position.y=.04+motion.hop;mesh.scaling.set(motion.sx,motion.sy,1);mesh.rotation.z=motion.roll;if(data.pose!==motion.pose){data.pose=motion.pose;setCreatureFrame(mesh);}}
    return motion;
  }
- function face(mesh,direction,alpha){if(!mesh?.metadata?.directional)return;const frame=directionFrame(direction,alpha),data=mesh.metadata;if(data.direction!==frame){data.direction=frame;if(data.manifest)setCreatureFrame(mesh);else mesh.material.diffuseTexture.uOffset=(frame*256+1)/2048;}if(data.ghost){data.ghost.scaling.copyFrom(mesh.scaling);data.ghost.rotation.z=mesh.rotation.z;data.ghost.visibility=mesh.visibility;}}
- return {create,createHero,createCreature,animate,face,dispose(){atlas.dispose();heroAtlas.dispose();creatures.forEach(c=>c.texture.dispose());creatureMaterials.forEach(m=>m.dispose(true,true));materials.forEach(m=>m.dispose(true,true));heroMaterials.forEach(m=>m.dispose(true,true));}};
+ function face(mesh,direction,alpha){if(!mesh?.metadata?.directional)return;const frame=directionFrame(direction,alpha),data=mesh.metadata;if(data.direction!==frame){data.direction=frame;if(data.guard)setGuardFrame(mesh);else if(data.manifest)setCreatureFrame(mesh);else mesh.material.diffuseTexture.uOffset=(frame*256+1)/2048;}if(data.ghost){data.ghost.scaling.copyFrom(mesh.scaling);data.ghost.rotation.z=mesh.rotation.z;data.ghost.visibility=mesh.visibility;}}
+ return {create,createHero,createCreature,createGuard,guardReady,animate,face,dispose(){if(disposed)return;disposed=true;sourceTextures.forEach(texture=>texture.dispose());sourceTextures.clear();creatureMaterials.forEach(m=>m.dispose(true,true));guardMaterials.forEach(m=>m.dispose(true,true));materials.forEach(m=>m.dispose(true,true));heroMaterials.forEach(m=>m.dispose(true,true));}};
  }catch(error){
    // Reject promptly so procedural fallback can start while siblings still load.
    loadFailed=true;loadError=error;sourceTextures.forEach(texture=>texture.dispose());sourceTextures.clear();throw error;

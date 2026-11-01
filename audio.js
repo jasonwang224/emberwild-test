@@ -1,21 +1,36 @@
-/** Emberwild's original, entirely synthesized score and effects. No audio downloads. */
+import {CHIP_TRACKS, THEME_PLAYLISTS, scoreStep} from './chiptune-score.js?v=17317200';
+import {createInstrumentBank, INSTRUMENT_NAMES} from './instrument-bank.js?v=17317200';
+
+/** Original handheld-inspired compositions and synthesized effects. No recordings or audio downloads. */
 export function createAudio() {
   let context = null;
   let master = null;
   let score = null;
+  let scoreFilter = null;
   let effects = null;
   let noise = null;
+  let chipNoise = null;
+  let instruments = null;
+  let room = null;
+  let musicVolume = .8;
+  let effectsVolume = .8;
   let timer = null;
   let active = false;
   let disposed = false;
-  let zone = 'overworld';
-  let combat = false;
+  let theme = 'overworld';
+  let selection = 'auto';
+  let trackId = THEME_PLAYLISTS.overworld[0];
+  const progress = Object.fromEntries(Object.keys(THEME_PLAYLISTS).map(key => [key, {index: 0, step: 0}]));
+  const allTracks = Object.keys(CHIP_TRACKS);
   let nextBeat = 0;
   let step = 0;
   let seed = 0x3ea8f12;
   const voices = new Set();
+  const pulseWaves = new Map();
   const lastEffect = new Map();
-  const MAX_VOICES = 40;
+  // Reserve separate headroom so a busy battle never steals the accompaniment.
+  const MUSIC_VOICES = 32;
+  const EFFECT_VOICES = 40;
   // Legacy combat calls share the same sound and throttle as their named releases.
   const effectAliases = { swing: 'sword-swing', shoot: 'bow-release', fire: 'wand-release' };
   const effectCooldowns = {
@@ -41,9 +56,10 @@ export function createAudio() {
     for (const node of voice.nodes) { try { node.disconnect(); } catch (_) {} }
   }
 
-  function voiceRoom() {
-    if (voices.size < MAX_VOICES) return;
-    const first = voices.values().next().value;
+  function voiceRoom(route) {
+    const group = [...voices].filter(voice => voice.route === route);
+    if (group.length < (route === score ? MUSIC_VOICES : EFFECT_VOICES)) return;
+    const first = group[0];
     if (first) {
       try { first.source.stop(); } catch (_) {}
       release(first);
@@ -52,17 +68,45 @@ export function createAudio() {
 
   function tone(freq, time, duration, volume = 0.12, shape = 'sine', route = score, endFreq = null, attack = 0.012) {
     if (!context || !active || disposed || !route) return;
-    voiceRoom();
+    voiceRoom(route);
     const oscillator = context.createOscillator();
     const envelope = context.createGain();
-    oscillator.type = shape;
+    if (shape.startsWith('pulse') || shape.startsWith('chip-')) {
+      if (context.createPeriodicWave && oscillator.setPeriodicWave) {
+        if (!pulseWaves.has(shape)) {
+          const real = new Float32Array(33), imaginary = new Float32Array(33);
+          if (shape.startsWith('pulse')) {
+            const duty = shape === 'pulse12' ? .125 : shape === 'pulse25' ? .25 : .5;
+            for (let n = 1; n < real.length; n++) {
+              real[n] = 2 * Math.sin(2 * Math.PI * n * duty) / (Math.PI * n);
+              imaginary[n] = 2 * (1 - Math.cos(2 * Math.PI * n * duty)) / (Math.PI * n);
+            }
+          } else {
+            // Distinct small wavetable palettes, rather than the same pulse
+            // patch on every melody. All tables are zero-DC and band-limited.
+            const partials = {
+              'chip-flute': [1, .11, .045, .015],
+              'chip-reed': [1, 0, .38, 0, .17, 0, .07],
+              'chip-bell': [1, .12, .5, .05, .18, 0, .08],
+              'chip-pluck': [1, .48, .24, .11, .05]
+            }[shape] || [1];
+            partials.forEach((value, i) => { imaginary[i + 1] = value; });
+          }
+          pulseWaves.set(shape, context.createPeriodicWave(real, imaginary));
+        }
+        oscillator.setPeriodicWave(pulseWaves.get(shape));
+      } else oscillator.type = shape.startsWith('pulse') || shape === 'chip-reed' ? 'square' : shape === 'chip-pluck' ? 'triangle' : 'sine';
+    } else oscillator.type = shape;
     oscillator.frequency.setValueAtTime(Math.max(20, freq), time);
     if (endFreq !== null) oscillator.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), time + duration);
     envelope.gain.setValueAtTime(0.0001, time);
     envelope.gain.exponentialRampToValueAtTime(Math.max(0.0002, volume), time + Math.min(attack, duration / 3));
+    if (route === score && endFreq === null && shape !== 'chip-bell' && shape !== 'chip-pluck') {
+      envelope.gain.linearRampToValueAtTime(Math.max(.0002, volume * (shape === 'chip-flute' ? .85 : .65)), time + duration * .72);
+    }
     envelope.gain.exponentialRampToValueAtTime(0.0001, time + duration);
     oscillator.connect(envelope).connect(route);
-    const voice = { source: oscillator, nodes: [oscillator, envelope] };
+    const voice = { source: oscillator, envelope, route, nodes: [oscillator, envelope] };
     voices.add(voice);
     oscillator.onended = () => release(voice);
     oscillator.start(time);
@@ -71,7 +115,7 @@ export function createAudio() {
 
   function breath(time, duration, volume, center = 1400, type = 'bandpass', endCenter = null) {
     if (!context || !active || disposed || !noise) return;
-    voiceRoom();
+    voiceRoom(effects);
     const source = context.createBufferSource();
     source.buffer = noise;
     source.loop = true;
@@ -85,7 +129,7 @@ export function createAudio() {
     envelope.gain.linearRampToValueAtTime(volume, time + Math.min(0.025, duration / 4));
     envelope.gain.exponentialRampToValueAtTime(0.0001, time + duration);
     source.connect(filter).connect(envelope).connect(effects);
-    const voice = { source, nodes: [source, filter, envelope] };
+    const voice = { source, envelope, route: effects, nodes: [source, filter, envelope] };
     voices.add(voice);
     source.onended = () => release(voice);
     source.start(time);
@@ -102,55 +146,110 @@ export function createAudio() {
     notes.forEach((note, index) => bell(note, time + index * spacing, volume, duration, effects));
   }
 
+  function instrumentNote(note, time, duration) {
+    const profile = instruments.get(note.voice);
+    if (!profile) return;
+    voiceRoom(score);
+    const source = context.createBufferSource(), envelope = context.createGain();
+    source.buffer = profile.buffer;
+    source.playbackRate.setValueAtTime(NOTE(note.note) / profile.rootFrequency, time);
+    source.loop = profile.loop;
+    if (profile.loop) { source.loopStart = profile.loopStart; source.loopEnd = profile.loopEnd; }
+    const peak = Math.max(.0002, note.volume * (profile.gain ?? 1));
+    const attack = Math.min(profile.attack, duration * .25);
+    const decay = Math.min(profile.decay ?? .09, duration * .3);
+    const releaseTime = Math.min(profile.release, .32);
+    envelope.gain.setValueAtTime(.0001, time);
+    envelope.gain.linearRampToValueAtTime(peak, time + attack);
+    envelope.gain.linearRampToValueAtTime(peak * (profile.sustain ?? .8), time + attack + decay);
+    envelope.gain.setValueAtTime(peak * (profile.sustain ?? .8), time + duration);
+    envelope.gain.exponentialRampToValueAtTime(.0001, time + duration + releaseTime);
+    const nodes = [source, envelope];
+    source.connect(envelope);
+    let output = envelope;
+    if (context.createStereoPanner) {
+      const panner = context.createStereoPanner();
+      panner.pan.value = Math.max(-.75, Math.min(.75, note.pan ?? profile.pan ?? 0));
+      envelope.connect(panner); output = panner; nodes.push(panner);
+    }
+    output.connect(score);
+    if (room) {
+      const send = context.createGain();
+      send.gain.value = note.send ?? profile.send ?? .12;
+      output.connect(send).connect(room); nodes.push(send);
+    }
+    const voice = {source, envelope, route: score, nodes};
+    voices.add(voice); source.onended = () => release(voice);
+    source.start(time); source.stop(time + duration + releaseTime + .025);
+  }
+
+  function chipDrum(kind, time, volume) {
+    if (kind === 'kick' || kind === 'tom') {
+      tone(kind === 'tom' ? 205 : 138, time, kind === 'tom' ? .18 : .105, volume, 'triangle', score, kind === 'tom' ? 92 : 46, .003);
+      return;
+    }
+    if (!chipNoise) return;
+    // A quiet pitched body makes the snare more than a burst of static.
+    if (kind === 'snare') tone(182, time, .09, volume * .5, 'triangle', score, 135, .002);
+    voiceRoom(score);
+    const source = context.createBufferSource(), filter = context.createBiquadFilter(), envelope = context.createGain();
+    const duration = kind === 'crash' ? .62 : kind === 'ride' ? .25 : kind === 'snare' ? .13 : kind === 'shaker' ? .065 : .045;
+    source.buffer = chipNoise;
+    source.loop = true;
+    filter.type = kind === 'shaker' ? 'bandpass' : 'highpass';filter.frequency.value = kind === 'snare' ? 1100 : kind === 'shaker' ? 2600 : kind === 'crash' ? 2800 : 4700;filter.Q.value = .5;
+    envelope.gain.setValueAtTime(.0001, time);
+    envelope.gain.linearRampToValueAtTime(volume, time + .002);
+    envelope.gain.exponentialRampToValueAtTime(.0001, time + duration);
+    source.connect(filter).connect(envelope).connect(score);
+    const voice = {source, envelope, route: score, nodes: [source, filter, envelope]};
+    voices.add(voice);source.onended = () => release(voice);
+    source.start(time);source.stop(time + duration + .015);
+  }
+
+  function fadeVoices(scoreOnly = true) {
+    if (!context) return;
+    const now = context.currentTime;
+    for (const voice of voices) {
+      if (scoreOnly && voice.route !== score) continue;
+      if (voice.envelope.gain.cancelAndHoldAtTime) voice.envelope.gain.cancelAndHoldAtTime(now);
+      else voice.envelope.gain.cancelScheduledValues(now);
+      voice.envelope.gain.setTargetAtTime(.0001, now, .009);
+      try { voice.source.stop(now + .045); } catch (_) {}
+    }
+  }
+
   function musicalBeat(time, position) {
-    const bar = Math.floor(position / 16);
-    const beat = position % 16;
-    if (zone === 'overworld') {
-      // D / G / B minor / A: a calm original wandering theme in D pentatonic.
-      const roots = [50, 55, 47, 57];
-      const root = roots[bar % roots.length];
-      if (beat === 0) {
-        tone(NOTE(root - 12), time, 5.5, 0.09, 'sine', score, null, 0.7);
-        tone(NOTE(root + 7), time, 4.8, 0.035, 'sine', score, null, 1.1);
-      }
-      const melodies = [
-        [74, null, 78, null, 81, null, 78, 76, 74, null, 69, null, 71, null, null, null],
-        [71, null, 74, null, 78, null, null, 76, 74, null, 71, null, 69, null, null, null],
-        [69, null, 71, 74, 78, null, 76, null, 74, null, 71, null, null, null, 69, null],
-        [76, null, 78, null, 81, null, 78, null, 76, null, 74, 71, 69, null, null, null]
-      ];
-      const melody = melodies[bar % 4][beat];
-      if (melody !== null) bell(melody + (bar % 8 > 3 ? -12 : 0), time, 0.08 + random() * 0.025, 1.55);
-      if ([2, 6, 10, 14].includes(beat)) {
-        tone(NOTE(root + (beat % 8 === 2 ? 12 : 19)), time, 1.2, 0.055, 'triangle');
-      }
-    } else {
-      // Sparse open fifths leave space for dungeon ambience and combat cues.
-      const root = [38, 36, 41, 38][bar % 4];
-      if (beat === 0) {
-        tone(NOTE(root), time, 5.9, 0.1, 'sine', score, null, 0.9);
-        tone(NOTE(root + 7), time, 4.8, 0.045, 'triangle', score, null, 1.2);
-      }
-      if ([3, 9, 14].includes(beat)) {
-        const note = [62, 65, 69, 72, 69, 65][(bar + beat) % 6];
-        bell(note, time, 0.07, 2.2);
-      }
+    const track = CHIP_TRACKS[trackId], seconds = 60 / track.bpm / 4;
+    const events = scoreStep(trackId, position);
+    for (const note of events.notes) {
+      instrumentNote(note, time, Math.max(.025, note.steps * seconds * .88 * (1 - (track.swing || 0))));
     }
-    if (combat && beat % 4 === 0) {
-      tone(82, time, 0.25, 0.15, 'sine', score, 43);
-      tone(NOTE(zone === 'dungeon' ? 38 : 50), time + 0.19, 0.15, 0.06, 'triangle');
-    }
+    for (const drum of events.drums) chipDrum(drum.kind, time, drum.volume);
   }
 
   function tick() {
     if (!active || !context || context.state !== 'running' || disposed) return;
     const now = context.currentTime;
     // Skip hidden-tab backlog instead of queuing a burst when the tab returns.
-    if (nextBeat < now - 0.2) nextBeat = now + 0.04;
+    if (nextBeat < now) nextBeat = now + 0.04;
     let scheduled = 0;
     while (nextBeat < now + 0.16 && scheduled++ < 3) {
-      musicalBeat(nextBeat, step++);
-      nextBeat += 0.375;
+      const track = CHIP_TRACKS[trackId];
+      musicalBeat(nextBeat, step);
+      // Long/short swing pairs retain the exact bar length. Advance using the
+      // outgoing track's tempo before selecting the next song at its cadence.
+      nextBeat += 60 / track.bpm / 4 * (1 + (step % 2 ? -1 : 1) * (track.swing || 0));
+      step++;
+      if (step >= track.bars * track.stepsPerBar) {
+        step = 0;
+        if (selection === 'auto') {
+          const cursor = progress[theme];
+          cursor.index = (cursor.index + 1) % THEME_PLAYLISTS[theme].length;
+          trackId = THEME_PLAYLISTS[theme][cursor.index];
+          setTrackColor(nextBeat);
+        }
+      }
+      if (selection === 'auto') progress[theme].step = step;
     }
   }
 
@@ -171,10 +270,31 @@ export function createAudio() {
         limiter.release.value = 0.2;
         master.connect(limiter).connect(context.destination);
         score = context.createGain();
-        score.gain.value = 0.38;
-        score.connect(master);
+        score.gain.value = 2.8 * musicVolume;
+        scoreFilter = context.createBiquadFilter();
+        scoreFilter.type = 'lowpass';scoreFilter.frequency.value = CHIP_TRACKS[trackId].filter || 4600;scoreFilter.Q.value = .35;
+        score.connect(scoreFilter).connect(master);
+        instruments = createInstrumentBank(context);
+        for (const voice of INSTRUMENT_NAMES) instruments.get(voice);
+        // A small original stereo room gives the ensemble space. It is generated
+        // once after a gesture, with no downloads or work on the loading screen.
+        if (context.createConvolver) {
+          room = context.createConvolver();
+          const impulse = context.createBuffer(2, Math.ceil(context.sampleRate * .62), context.sampleRate);
+          for (let channel = 0; channel < 2; channel++) {
+            const samples = impulse.getChannelData(channel);
+            let soft = 0;
+            for (let i = 0; i < samples.length; i++) {
+              soft = soft * .45 + (random() * 2 - 1) * .55;
+              samples[i] = soft * Math.exp(-i / (context.sampleRate * .115));
+            }
+            samples[0] = 0;
+          }
+          room.buffer = impulse;
+          room.connect(score);
+        }
         effects = context.createGain();
-        effects.gain.value = 0.58;
+        effects.gain.value = .725 * effectsVolume;
         effects.connect(master);
         noise = context.createBuffer(1, context.sampleRate, context.sampleRate);
         const channel = noise.getChannelData(0);
@@ -182,6 +302,14 @@ export function createAudio() {
         for (let i = 0; i < channel.length; i++) {
           smooth = (smooth + (random() * 2 - 1) * 0.12) / 1.12;
           channel[i] = smooth * 3;
+        }
+        // A tiny deterministic stepped-noise buffer supplies the handheld kit.
+        chipNoise = context.createBuffer(1, Math.ceil(context.sampleRate * .12), context.sampleRate);
+        const chipChannel = chipNoise.getChannelData(0);
+        let lfsr = 0x4a35;
+        for (let i = 0; i < chipChannel.length; i++) {
+          if (i % 3 === 0) lfsr = (lfsr >>> 1) | (((lfsr ^ (lfsr >>> 1)) & 1) << 14);
+          chipChannel[i] = (lfsr & 1) ? .8 : -.8;
         }
         nextBeat = context.currentTime + 0.06;
         timer = globalThis.setInterval(tick, 80);
@@ -194,11 +322,26 @@ export function createAudio() {
 
   function setEnabled(value) {
     if (disposed) return;
-    active = Boolean(value);
+    const next = Boolean(value);
+    if (next === active) return;
+    active = next;
     if (!context) return;
     master.gain.cancelScheduledValues(context.currentTime);
     master.gain.setTargetAtTime(active ? 0.48 : 0, context.currentTime, 0.05);
+    if (!active) fadeVoices(false);
     if (active) { nextBeat = context.currentTime + 0.06; tick(); }
+  }
+
+  function setMusicVolume(value) {
+    if (disposed || typeof value !== 'number' || !Number.isFinite(value)) return;
+    musicVolume = Math.max(0, Math.min(1, value));
+    if (score) score.gain.setTargetAtTime(2.8 * musicVolume, context.currentTime, .035);
+  }
+
+  function setEffectsVolume(value) {
+    if (disposed || typeof value !== 'number' || !Number.isFinite(value)) return;
+    effectsVolume = Math.max(0, Math.min(1, value));
+    if (effects) effects.gain.setTargetAtTime(.725 * effectsVolume, context.currentTime, .035);
   }
 
   function play(name) {
@@ -359,14 +502,55 @@ export function createAudio() {
     }
   }
 
-  function update(nextZone, inCombat) {
-    const target = nextZone === 'dungeon' ? 'dungeon' : 'overworld';
-    if (target !== zone) {
-      zone = target;
-      step = 0;
-      if (context) nextBeat = context.currentTime + 0.08;
+  function setTrackColor(time) {
+    if (scoreFilter) scoreFilter.frequency.setTargetAtTime(CHIP_TRACKS[trackId].filter || 4600, time, .08);
+  }
+
+  function changeTrack(id, resumeStep = 0) {
+    fadeVoices();
+    trackId = id;
+    step = resumeStep;
+    if (context) {
+      nextBeat = context.currentTime + .08;
+      if (scoreFilter.frequency.cancelAndHoldAtTime) scoreFilter.frequency.cancelAndHoldAtTime(context.currentTime);
+      else scoreFilter.frequency.cancelScheduledValues(context.currentTime);
+      setTrackColor(context.currentTime);
     }
-    combat = Boolean(inCombat);
+  }
+
+  function selectMusic(value) {
+    if (disposed || (value !== 'auto' && !Object.hasOwn(CHIP_TRACKS, value))) return false;
+    if (value === selection) return true;
+    selection = value;
+    if (value === 'auto') {
+      const cursor = progress[theme];
+      changeTrack(THEME_PLAYLISTS[theme][cursor.index], cursor.step);
+    } else changeTrack(value);
+    return true;
+  }
+
+  function nextMusic() {
+    if (disposed) return;
+    if (selection === 'auto') {
+      const cursor = progress[theme], playlist = THEME_PLAYLISTS[theme];
+      if (playlist.length < 2) return;
+      cursor.index = (cursor.index + 1) % playlist.length;
+      cursor.step = 0;
+      changeTrack(playlist[cursor.index]);
+    } else selectMusic(allTracks[(allTracks.indexOf(trackId) + 1) % allTracks.length]);
+  }
+
+  function update(nextZone, inCombat) {
+    if (disposed) return;
+    const place = Object.hasOwn(THEME_PLAYLISTS, nextZone) ? nextZone : 'overworld';
+    const target = inCombat && place !== 'title' ? 'combat' : place;
+    if (target !== theme) {
+      theme = target;
+      if (selection === 'auto') {
+        const cursor = progress[theme];
+        changeTrack(THEME_PLAYLISTS[theme][cursor.index], cursor.step);
+      }
+    }
   }
 
   function dispose() {
@@ -380,8 +564,16 @@ export function createAudio() {
     }
     if (context) { const closing = context.close(); if (closing && closing.catch) closing.catch(() => {}); }
     lastEffect.clear();
-    context = master = score = effects = noise = null;
+    pulseWaves.clear();
+    instruments?.dispose();
+    room?.disconnect();
+    context = master = score = scoreFilter = effects = noise = chipNoise = instruments = room = null;
   }
 
-  return { unlock, setEnabled, play, update, dispose, get enabled() { return active; } };
+  return { unlock, setEnabled, play, update, dispose, selectMusic, nextMusic, setMusicVolume, setEffectsVolume,
+    get musicVolume() { return musicVolume; },
+    get effectsVolume() { return effectsVolume; },
+    get musicSelection() { return selection; },
+    get currentTrack() { return Object.freeze({id: trackId, ...CHIP_TRACKS[trackId]}); },
+    get enabled() { return active; } };
 }

@@ -1,23 +1,23 @@
 /* Emberwild — original procedural scenery. No external assets. */
-import {createMeadowTexture} from './meadow-texture.js?v=e2609980';
-import {buildMeadowDetail} from './meadow-detail.js?v=e2609980';
-import {installCanopyWind,CANOPY_WIND_PADDING} from './canopy-wind.js?v=e2609980';
-import {installEnvironmentPaint,applyEnvironmentPaintUV} from './environment-paint.js?v=e2609980';
-import {createCampMaterials,applyCampPaintUV} from './camp-paint.js?v=e2609980';
-import {createCanopyPaint,canopyPaintUV} from './canopy-paint.js?v=e2609980';
-import {treeAppearance,buildTreeCanopy,buildTreeBranches,buildTreeAccents} from './tree-canopy.js?v=e2609980';
-import {createTreeStyleController} from './tree-style-controller.js?v=e2609980';
-import {TOWN_PLAN,buildTownExpansion} from './town-expansion.js?v=e2609980';
-import {EXPANSION_BOUNDS,EXPANSION_ROUTES,expansionReservedAreas,buildWorldExpansion} from './world-expansion.js?v=e2609980';
-import {buildCampTerrain} from './camp-terrain.js?v=e2609980';
-import {dressCamps} from './camp-dressing.js?v=e2609980';
-import {isTownSafe,findClearPosition} from './world-navigation.js?v=e2609980';
-import {enemyProfile} from './enemy-profile.js?v=e2609980';
-import {createCircleQuery,createSegmentQuery} from './world-spatial-query.js?v=e2609980';
-import {canopyVertexLayout,deformCanopyTemplate,cachedCanopyPaintUV} from './canopy-vertex-cache.js?v=e2609980';
-import {applyBatchVertexData,uploadBatchGeometry} from './world-batch-geometry.js?v=e2609980';
-import {installWaterSurface} from './water-surface.js?v=e2609980';
-export {treeAppearance} from './tree-canopy.js?v=e2609980';
+import {createMeadowTexture} from './meadow-texture.js?v=17317200';
+import {buildMeadowDetail} from './meadow-detail.js?v=17317200';
+import {installCanopyWind,CANOPY_WIND_PADDING} from './canopy-wind.js?v=17317200';
+import {installEnvironmentPaint,applyEnvironmentPaintUV} from './environment-paint.js?v=17317200';
+import {createCampMaterials,applyCampPaintUV} from './camp-paint.js?v=17317200';
+import {createCanopyPaint,canopyPaintUV} from './canopy-paint.js?v=17317200';
+import {treeAppearance,buildTreeCanopy,buildTreeBranches,buildTreeAccents} from './tree-canopy.js?v=17317200';
+import {createTreeStyleController} from './tree-style-controller.js?v=17317200';
+import {TOWN_PLAN,buildTownExpansion} from './town-expansion.js?v=17317200';
+import {EXPANSION_BOUNDS,EXPANSION_ROUTES,expansionReservedAreas,buildWorldExpansion} from './world-expansion.js?v=17317200';
+import {buildCampTerrain} from './camp-terrain.js?v=17317200';
+import {dressCamps} from './camp-dressing.js?v=17317200';
+import {isTownSafe,findClearPosition} from './world-navigation.js?v=17317200';
+import {enemyProfile} from './enemy-profile.js?v=17317200';
+import {createCircleQuery,createSegmentQuery} from './world-spatial-query.js?v=17317200';
+import {canopyVertexLayout,deformCanopyTemplate,cachedCanopyPaintUV} from './canopy-vertex-cache.js?v=17317200';
+import {applyBatchVertexData,uploadBatchGeometry} from './world-batch-geometry.js?v=17317200';
+import {installWaterSurface} from './water-surface.js?v=17317200';
+export {treeAppearance} from './tree-canopy.js?v=17317200';
 
 export function createWorld(B, scene, options = {}) {
   const dungeon = options.zone === 'dungeon';

@@ -1,4 +1,4 @@
-import {createCombatVisuals} from './combat-visuals.js?v=e2609980';
+import {createCombatVisuals} from './combat-visuals.js?v=17317200';
 
 export const GUARD_REACH=3.5;
 export const GUARD_POSTS=Object.freeze([
@@ -25,22 +25,24 @@ export function createTownGuards(B,scene,world,sprites,{onStrike=()=>{},onGreet=
  const shadow=inTown?material('town-guard-foot-shadow','#292431',true):null;if(shadow)shadow.alpha=.54;
  let fallbackPalette=null;
  function fallback(body){
-  fallbackPalette??={skin:material('world-guard-teal','#77bb9a'),armor:material('world-guard-steel','#8295bb'),rim:material('world-guard-rim','#c3cddc'),ink:material('world-guard-ink','#26353e'),plume:material('world-guard-plume','#cb6959')};
+  fallbackPalette??={skin:material('world-guard-cream','#f2dfb5'),uniform:material('world-guard-tabard','#3e6b3c'),armor:material('world-guard-bronze','#b48043'),rim:material('world-guard-rim','#e0ab5a'),ink:material('world-guard-ink','#332c26'),leather:material('world-guard-leather','#6b4531')};
   const p=fallbackPalette,figure=new B.TransformNode('round-guard-fallback',scene);figure.parent=body;
   const orb=(name,position,scale,mat)=>{
    const m=B.MeshBuilder.CreateSphere(name,{diameter:1,segments:8},scene);m.parent=figure;m.position.set(...position);m.scaling.set(...scale);m.material=mat;m.isPickable=false;m.renderOutline=true;m.outlineWidth=.012;m.outlineColor=B.Color3.FromHexString('#26353e');return m;
   };
-  orb('round guard body',[0,.76,0],[1.48,1.45,1.2],p.skin);
-  orb('guard helmet',[0,1.58,0],[1.56,.88,1.3],p.armor);
-  orb('helmet brim',[0,1.32,.08],[1.65,.14,1.38],p.rim);
-  orb('helmet red crest',[0,2.04,-.13],[.19,.45,.58],p.plume);
-  for(const x of [-.28,.28])orb('guard eye',[x,.98,.55],[.13,.21,.1],p.ink);
+  orb('round guard tabard',[0,.68,0],[1.48,1.28,1.2],p.uniform);
+  orb('guard cream face',[0,1.17,.05],[1.38,.91,1.15],p.skin);
+  orb('guard helmet',[0,1.69,-.02],[1.42,.83,1.24],p.armor);
+  orb('broad bronze helmet brim',[0,1.5,.04],[1.97,.18,1.63],p.rim);
+  orb('guard leather belt',[0,.64,.04],[1.51,.24,1.24],p.leather);
+  const buckle=B.MeshBuilder.CreateBox('watch brass buckle',{width:.29,height:.25,depth:.12},scene);buckle.parent=figure;buckle.position.set(0,.66,.68);buckle.material=p.rim;buckle.isPickable=false;
+  for(const x of [-.3,.3]){orb('guard eye',[x,1.19,.59],[.13,.2,.1],p.ink);orb('guard boot',[x,.13,.18],[.48,.27,.62],p.leather);}
   return figure;
  }
  for(const [index,post] of (inTown?GUARD_POSTS:[]).entries()){
   const root=new B.TransformNode('town-guard-'+post.id,scene);root.position.set(post.x,0,post.z);
   const body=new B.TransformNode('guard-body',scene);body.parent=root;
-  const sprite=sprites?.createHero?.('knight',body,2.4)||null;
+  const sprite=sprites?.createGuard?.(body,2.4)||null;
   if(sprite?.metadata?.ghost){
    // The hero's cyan through-scenery silhouette is exclusively a player aid.
    sprite.metadata.ghost.dispose();sprite.metadata.ghost=null;
@@ -53,6 +55,16 @@ export function createTownGuards(B,scene,world,sprites,{onStrike=()=>{},onGreet=
   if(!sprite)figure.rotation.y=Math.atan2(outward.x,outward.z);
   combat.update(0,outward,0);if(sprite)sprites?.face?.(sprite,outward,0);actors.push(actor);
  }
+ // An optional guard atlas may finish after the first playable frame. Swap the
+ // outfit only; post placement, battle state and foot shadows remain untouched.
+ sprites?.guardReady?.then(ready=>{
+  if(!ready||disposed)return;
+  for(const actor of actors){
+   if(actor.sprite||actor.root.isDisposed())continue;
+   const sprite=sprites.createGuard?.(actor.body,2.4);if(!sprite)continue;
+   actor.figure.dispose();actor.sprite=actor.figure=sprite;sprites.face?.(sprite,actor.facing,frame.cameraAlpha??0);
+  }
+ });
  function eligible(actor,enemy){
   if(!enemy||!Number.isFinite(enemy.hp)||enemy.hp<=0||enemy.kind==='boss'||enemy.elite||!enemy.root||enemy.root.isDisposed()||!enemy.root.isEnabled())return false;
   const dx=enemy.root.position.x-actor.post.x,dz=enemy.root.position.z-actor.post.z,d=Math.hypot(dx,dz);
@@ -66,7 +78,7 @@ export function createTownGuards(B,scene,world,sprites,{onStrike=()=>{},onGreet=
   actors,
   update(dt,playerPosition,cameraAlpha,{paused=false,enabled=true,enemies=[]}={}){
    if(disposed)return;
-   frame={paused,enabled,enemies};dt=Number.isFinite(dt)?Math.max(0,Math.min(.1,dt)):0;
+   frame={paused,enabled,enemies,cameraAlpha};dt=Number.isFinite(dt)?Math.max(0,Math.min(.1,dt)):0;
    if(enabled&&!paused)greetingGap=Math.max(0,greetingGap-dt);
    for(const actor of actors){
     if(actor.root.isDisposed())continue;

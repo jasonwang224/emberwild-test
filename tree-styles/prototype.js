@@ -1,5 +1,5 @@
-import {finishHistoricalBatch,assertTreeBuildActive} from './runtime.js?v=e2609980';
-import {applyCelShading} from './cel-c8f1bee.js?v=e2609980';
+import {finishHistoricalBatch,assertTreeBuildActive} from './runtime.js?v=17317200';
+import {applyCelShading} from './cel-c8f1bee.js?v=17317200';
 
 /* Visual reconstruction from the surviving first-prototype screenshot. The
  * original unsaved builder is unavailable; this option is labeled accordingly. */

@@ -1,34 +1,35 @@
-import {enableRightDragOrbit} from './camera-controls.js?v=e2609980';
-import {createImpactFeedback} from './impact-effects.js?v=e2609980';
-import {createDashTrail} from './dash-trail.js?v=e2609980';
-import {createLootBeacon} from './loot-beacon.js?v=e2609980';
-import {createLootAppearance} from './loot-appearance.js?v=e2609980';
-import {createBossLane} from './boss-lane.js?v=e2609980';
-import {chooseTarget,enemyDistance,CREATURE_NAMES} from './targeting.js?v=e2609980';
-import {enemyProfile} from './enemy-profile.js?v=e2609980';
-import {createBossPresence} from './boss-presence.js?v=e2609980';
-import {createWorldLighting,setWorldLighting} from './lighting.js?v=e2609980';
-import {createWorld} from './world.js?v=e2609980';
-import {normalizeTreeStyle} from './tree-style-options.js?v=e2609980';
-import {treeStyleMenuHTML,treeStyleName} from './tree-style-ui.js?v=e2609980';
-import {findClearPosition,resolveMovement} from './world-navigation.js?v=e2609980';
-import {createAudio} from './audio.js?v=e2609980';
-import {createSpriteLibrary} from './sprites.js?v=e2609980';
-import {applyCelShading} from './cel.js?v=e2609980';
-import {createVillagers} from './villagers.js?v=e2609980';
-import {createCampRescues} from './camp-rescues.js?v=e2609980';
-import {createTownGuards,GUARD_REACH} from './town-guards.js?v=e2609980';
-import {createQuestMarkers} from './quest-markers.js?v=e2609980';
-import {QUESTS,questStatus,questObjectives,acceptQuest,claimQuest,recordQuestEvent,setTrackedQuest} from './quests.js?v=e2609980';
-import {mainQuestView,sideQuestView,questCardHTML,questObjectiveHTML,questRewardText,questLogHTML,questDialogueHTML,questGiverHTML,trackedQuestInfo,questGiverState as getQuestGiverState} from './quest-ui.js?v=e2609980';
-import {createRenderer} from './renderer.js?v=e2609980';
-import {bindGameLifecycle} from './game-lifecycle.js?v=e2609980';
-import {createCombatVisuals} from './combat-visuals.js?v=e2609980';
-import {createPotionAnimation} from './potion-animation.js?v=e2609980';
-import {createHealingEffects} from './healing-effects.js?v=e2609980';
-import {createTitleScene} from './title-scene.js?v=e2609980';
-import {createAbilityEffects,ABILITY_CUES} from './ability-effects.js?v=e2609980';
-import {CLASSES,SAVE_KEY,newGame,stats,addXP,xpNeeded,makeLoot,equip,parseSave,questInfo,RARITIES} from './core.js?v=e2609980';
+import {enableRightDragOrbit} from './camera-controls.js?v=17317200';
+import {createImpactFeedback} from './impact-effects.js?v=17317200';
+import {createDashTrail} from './dash-trail.js?v=17317200';
+import {createLootBeacon} from './loot-beacon.js?v=17317200';
+import {createLootAppearance} from './loot-appearance.js?v=17317200';
+import {createBossLane} from './boss-lane.js?v=17317200';
+import {chooseTarget,enemyDistance,CREATURE_NAMES} from './targeting.js?v=17317200';
+import {enemyProfile} from './enemy-profile.js?v=17317200';
+import {createBossPresence} from './boss-presence.js?v=17317200';
+import {createWorldLighting,setWorldLighting} from './lighting.js?v=17317200';
+import {createWorld} from './world.js?v=17317200';
+import {normalizeTreeStyle} from './tree-style-options.js?v=17317200';
+import {treeStyleMenuHTML,treeStyleName} from './tree-style-ui.js?v=17317200';
+import {findClearPosition,resolveMovement} from './world-navigation.js?v=17317200';
+import {createAudio} from './audio.js?v=17317200';
+import {CHIP_TRACKS,THEME_PLAYLISTS} from './chiptune-score.js?v=17317200';
+import {createSpriteLibrary} from './sprites.js?v=17317200';
+import {applyCelShading} from './cel.js?v=17317200';
+import {createVillagers} from './villagers.js?v=17317200';
+import {createCampRescues} from './camp-rescues.js?v=17317200';
+import {createTownGuards,GUARD_REACH} from './town-guards.js?v=17317200';
+import {createQuestMarkers} from './quest-markers.js?v=17317200';
+import {QUESTS,questStatus,questObjectives,acceptQuest,claimQuest,recordQuestEvent,setTrackedQuest} from './quests.js?v=17317200';
+import {mainQuestView,sideQuestView,questCardHTML,questObjectiveHTML,questRewardText,questLogHTML,questDialogueHTML,questGiverHTML,trackedQuestInfo,questGiverState as getQuestGiverState} from './quest-ui.js?v=17317200';
+import {createRenderer} from './renderer.js?v=17317200';
+import {bindGameLifecycle} from './game-lifecycle.js?v=17317200';
+import {createCombatVisuals} from './combat-visuals.js?v=17317200';
+import {createPotionAnimation} from './potion-animation.js?v=17317200';
+import {createHealingEffects} from './healing-effects.js?v=17317200';
+import {createTitleScene} from './title-scene.js?v=17317200';
+import {createAbilityEffects,ABILITY_CUES} from './ability-effects.js?v=17317200';
+import {CLASSES,SAVE_KEY,newGame,stats,addXP,xpNeeded,makeLoot,equip,parseSave,questInfo,RARITIES} from './core.js?v=17317200';
 
 const $=id=>document.getElementById(id),B=window.BABYLON,V=B?.Vector3;
 const canvas=$('game'),sound=createAudio();
@@ -38,6 +39,7 @@ let attackCD=0,skillCD=0,ultCD=0,dashCD=0,dashTime=0,invincible=0,shieldTime=0,p
 const keys=new Set(),touch={x:0,z:0},materials=new Map(),camTarget=new V(0,0,0),temp=new V();
 const clearedCamps=new Set();
 let saved=null;try{saved=parseSave(localStorage.getItem(SAVE_KEY));}catch{}
+applyAudioMix(saved?.settings??save.settings);
 let treeStyleBusy=false,introWorldReusable=false;
 let titleScene=null,titlePaused=false,titleMusic=false,titleClock=0;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -197,13 +199,13 @@ function activateZone(next,spawnMobs=true){
  if(spawnMobs){for(const p of world.spawnPoints)spawnEnemy(p.kind,p.x,p.z,p.level||1,p.campId);if(next==='dungeon')spawnEnemy('boss',0,22,save.ascension+3);}
  $('boss-hud').hidden=true;save.zone=next;
 }
-function start(continuing=false){clearTitleBackdrop();resetCamera();sound.unlock();save=continuing&&saved?parseSave(JSON.stringify(saved)):newGame(selectedClass);selectedClass=save.heroClass;hero.root.dispose();fox.root.dispose();hero=createHero(selectedClass);fox=createFox();
+function start(continuing=false){clearTitleBackdrop();resetCamera();sound.setEnabled(false);sound.unlock();const mix={musicVolume:sound.musicVolume,effectsVolume:sound.effectsVolume};save=continuing&&saved?parseSave(JSON.stringify(saved)):newGame(selectedClass);if(!continuing)Object.assign(save.settings,mix);applyAudioMix(save.settings);selectedClass=save.heroClass;hero.root.dispose();fox.root.dispose();hero=createHero(selectedClass);fox=createFox();
  // Only the untouched title world is reusable. Later restarts need fresh
  // interactables, shrine state and encounters, just as a zone transition does.
  const reuseIntroWorld=introWorldReusable&&zone===save.zone&&save.zone==='overworld';introWorldReusable=false;
  if(reuseIntroWorld){resetDynamics();setupZoneActors();applyCelShading(B,scene);activateZone(save.zone,true);}else buildZone(save.zone,true);
  if(continuing){const restored=findClearPosition({x:save.x,z:save.z},world.obstacles,world.bounds,.48,world.spawn);hero.root.position.x=restored.x;hero.root.position.z=restored.z;}else hero.root.position.set(world.spawn.x,0,world.spawn.z);camTarget.copyFrom(hero.root.position);fox.root.position.copyFrom(hero.root.position).addInPlace(new V(1,0,-1));
- const st=stats(save);save.hp=clamp(save.hp,1,st.maxHp);save.mana=clamp(save.mana,0,st.maxMana);attackCD=skillCD=ultCD=dashCD=dashTime=invincible=shieldTime=petCD=attackAnim=combo=comboTime=shake=inCombat=saveTime=hudTime=0;lastFacing.set(0,0,1);keys.clear();touch.x=touch.z=0;fishing=null;lastZone='';mode='play';paused=false;$('intro').hidden=true;$('hud').hidden=false;$('modal').hidden=true;sound.setEnabled(save.settings.sound);applyQuality();canvas.focus();updateHUD();announce(continuing?'Welcome home, wanderer.':'Your story starts here.','EMBERWILD');if(!continuing)toast('Meet Elder Rowan','Follow the ! marker by the fountain. Press E to talk.','!');persist();}
+ const st=stats(save);save.hp=clamp(save.hp,1,st.maxHp);save.mana=clamp(save.mana,0,st.maxMana);attackCD=skillCD=ultCD=dashCD=dashTime=invincible=shieldTime=petCD=attackAnim=combo=comboTime=shake=inCombat=saveTime=hudTime=0;lastFacing.set(0,0,1);keys.clear();touch.x=touch.z=0;fishing=null;lastZone='';mode='play';paused=false;$('intro').hidden=true;$('hud').hidden=false;$('modal').hidden=true;sound.update(zone==='overworld'&&world.isSafe(hero.root.position.x,hero.root.position.z)?'town':zone,false);sound.setEnabled(save.settings.sound);applyQuality();canvas.focus();updateHUD();announce(continuing?'Welcome home, wanderer.':'Your story starts here.','EMBERWILD');if(!continuing)toast('Meet Elder Rowan','Follow the ! marker by the fountain. Press E to talk.','!');persist();}
 function persist(){if(mode==='intro')return;save.x=hero.root.position.x;save.z=hero.root.position.z;save.zone=zone;try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));$('save-status').textContent='Adventure saved · on this device';saved=parseSave(JSON.stringify(save));}catch{$('save-status').textContent='Saving unavailable in this browser';}}
 
 const ENEMY={slime:{hp:55,speed:2.5,damage:10,color:'#75bba0',xp:28,gold:8},mushroom:{hp:85,speed:1.8,damage:13,color:'#bf757b',xp:38,gold:12},wolf:{hp:100,speed:4,damage:15,color:'#708ba1',xp:42,gold:14},golem:{hp:180,speed:1.4,damage:22,color:'#879b8d',xp:65,gold:24},boss:{hp:1200,speed:1.9,damage:28,color:'#8c77a4',xp:400,gold:250}};
@@ -463,7 +465,57 @@ async function changeTreeStyle(value){
  finally{treeStyleBusy=false;}
  if(!$('modal').hidden&&$('modal-content').querySelector('[data-tree-menu]'))treeStyles();
 }
-function settings(){openModal(`<div class="eyebrow">TAKE A BREATHER</div><h2 class="modal-title">Make yourself at home.</h2><button class="choice" data-action="sound"><b>Music & sound · ${save.settings.sound?'ON':'OFF'}</b><small>Original ambient music, combat themes, and effects.</small></button><button class="choice" data-action="auto"><b>Automatic basic attacks · ${save.settings.autoAttack?'ON':'OFF'}</b><small>Targets the nearest enemy in range. You still control skills and dodges.</small></button><button class="choice" data-action="quality"><b>Graphics · ${save.settings.quality==='low'?'PERFORMANCE':'HIGH'}</b><small>${backend} renderer · Lower quality disables shadows and reduces resolution.</small></button><button class="choice" data-action="trees"><b>Tree designs · ${treeStyleName(save.settings.treeStyle)}</b><small>Compare the original artwork and saved 3D styles. Shortcut: T.</small></button><div class="controls-help"><p><b>WASD / arrows</b> Move · <b>Click ground</b> Walk to point<br><b>Space / click enemy</b> Basic attack · <b>Q</b> Skill · <b>F</b> Ultimate<br><b>Shift</b> Dodge · <b>R</b> Potion · <b>E</b> Interact<br><b>Right-drag / Z / C</b> Orbit · <b>Scroll</b> Zoom · <b>V</b> Reset view<br><b>I</b> Equipment · <b>J</b> Journal · <b>M</b> Map<br><b>T</b> Tree designs · <b>Esc / P</b> Pause</p></div><button class="primary" data-action="close">Back to the wild →</button><button class="secondary" data-action="title">Save & return to title</button>`);}
+const musicAreaNames={title:'Title',town:'Town',overworld:'Exploration',dungeon:'Dungeon',combat:'Battle'};
+function applyAudioMix(settings){sound.setMusicVolume(settings.musicVolume);sound.setEffectsVolume(settings.effectsVolume);}
+function changeAudioVolume(key,percent,commit=false){
+ if(!['musicVolume','effectsVolume'].includes(key)||!Number.isFinite(percent))return;
+ const value=clamp(percent/100,0,1);
+ if(key==='musicVolume')sound.setMusicVolume(value);else sound.setEffectsVolume(value);
+ save.settings[key]=value;
+ if(mode==='intro'){
+  // Title controls must retain the existing adventure, not save the preview hero.
+  if(saved){saved.settings[key]=value;if(commit)try{localStorage.setItem(SAVE_KEY,JSON.stringify(saved));}catch{}}
+ }else if(commit)persist();
+ syncMusicStatus();
+}
+function musicMixerHTML(){
+ return `<fieldset class="music-mixer"><legend>Sound balance</legend>${[['musicVolume','Music volume'],['effectsVolume','Sound effects volume']].map(([key,label])=>{const percent=Math.round(sound[key]*100),id=`mix-${key}`;return `<div class="music-mix-control"><label for="${id}">${label}</label><output for="${id}" data-volume-output="${key}">${percent}%</output><input id="${id}" type="range" min="0" max="100" step="1" value="${percent}" data-audio-volume="${key}" aria-valuetext="${percent} percent"></div>`;}).join('')}<p>Balance the soundtrack and game sounds separately. Set either to 0% to silence it.</p></fieldset>`;
+}
+function musicEnabled(enabled=true){
+ if(mode==='intro'){
+  titleMusic=enabled;sound.update('title',false);
+  $('title-sound').setAttribute('aria-pressed',String(enabled));
+  $('title-sound').setAttribute('aria-label',enabled?'Mute title music':'Enable title music');
+ }else{save.settings.sound=enabled;updateHUD();persist();}
+ sound.setEnabled(enabled);if(enabled)sound.unlock();
+}
+function musicLibrary(focusAction=''){
+ const current=sound.currentTrack,selection=sound.musicSelection,scroll=$('modal-content').scrollTop;
+ const groups=Object.entries(THEME_PLAYLISTS).map(([area,ids])=>`<section class="music-track-group"><h3>${musicAreaNames[area]||esc(area)}</h3><div class="music-track-grid">${ids.map(id=>{const track=CHIP_TRACKS[id];return `<button type="button" class="music-track${current.id===id&&sound.enabled?' playing':''}" data-action="music-select:${esc(id)}" data-music-id="${esc(id)}" aria-label="Play ${esc(track.title)}" aria-pressed="${selection===id}"><span class="music-track-heading"><b>${esc(track.title)}</b><span class="music-play-indicator" aria-hidden="true">▶</span></span><small>${esc(track.description)}</small></button>`;}).join('')}</div></section>`).join('');
+ openModal(`<section class="music-library" data-music-library><div class="eyebrow">THE EMBERWILD SONGBOOK</div><h2 class="modal-title">A tune for every trail.</h2><p class="music-library-intro">Original instrumental music with woodwinds, strings, brass, mallets, bass, and percussion. Choose a song now, or let the soundtrack follow your adventure.</p><div class="music-player"><small data-music-state>${sound.enabled?'NOW PLAYING':'MUSIC PAUSED'}</small><strong data-music-title>${esc(current.title)}</strong><p data-music-description>${esc(current.description)}</p><div class="music-player-actions"><button type="button" class="secondary" data-action="music-toggle">${sound.enabled?'Mute music':'Play music'}</button><button type="button" class="secondary" data-action="music-next">Next tune →</button></div></div>${musicMixerHTML()}<button type="button" class="music-auto" data-action="music-select:auto" aria-pressed="${selection==='auto'}"><b>Automatic · follow the adventure</b><small>Switches with your surroundings and rotates the songs in each area.</small></button>${groups}<div class="music-library-footer"><p>Choosing a song keeps it playing until you select another or return to Automatic. This choice lasts for this visit.</p><button type="button" class="secondary" data-action="music-back">${mode==='intro'?'Back to the title screen':'Back to settings'}</button></div></section>`);
+ syncMusicStatus();
+ if(focusAction){const button=[...$('modal-content').querySelectorAll('[data-action]')].find(el=>el.dataset.action===focusAction);button?.focus({preventScroll:true});$('modal-content').scrollTop=scroll;}
+}
+function syncMusicStatus(){
+ if($('modal').hidden)return;
+ const panel=$('modal-content').querySelector('[data-music-library]');if(!panel)return;
+ const track=sound.currentTrack,selection=sound.musicSelection,key=track.id+'|'+selection+'|'+sound.enabled+'|'+sound.musicVolume+'|'+sound.effectsVolume;
+ if(panel.dataset.musicStatus===key)return;panel.dataset.musicStatus=key;
+ panel.querySelector('[data-music-title]').textContent=track.title;
+ panel.querySelector('[data-music-description]').textContent=track.description;
+ panel.querySelector('[data-music-state]').textContent=sound.enabled?'NOW PLAYING':'MUSIC PAUSED';
+ panel.querySelector('[data-action="music-toggle"]').textContent=sound.enabled?'Mute music':'Play music';
+ for(const name of ['musicVolume','effectsVolume']){
+  const percent=Math.round(sound[name]*100),input=panel.querySelector(`[data-audio-volume="${name}"]`);
+  if(input){input.value=String(percent);input.setAttribute('aria-valuetext',`${percent} percent`);panel.querySelector(`[data-volume-output="${name}"]`).textContent=`${percent}%`;}
+ }
+ const next=panel.querySelector('[data-action="music-next"]');
+ next.disabled=selection==='auto'&&(THEME_PLAYLISTS[track.theme]?.length||0)<2;
+ next.title=next.disabled?'Choose a song below to explore the soundtrack':'Play the next tune';
+ panel.querySelector('[data-action="music-select:auto"]').setAttribute('aria-pressed',String(selection==='auto'));
+ panel.querySelectorAll('[data-music-id]').forEach(button=>{button.classList.toggle('playing',sound.enabled&&button.dataset.musicId===track.id);button.setAttribute('aria-pressed',String(selection===button.dataset.musicId));});
+}
+function settings(){openModal(`<div class="eyebrow">TAKE A BREATHER</div><h2 class="modal-title">Make yourself at home.</h2><button class="choice" data-action="sound"><b>Music & sound · ${save.settings.sound?'ON':'OFF'}</b><small>Original instrumental soundtrack, combat themes, and effects.</small></button><button class="choice music-settings-choice" data-action="music"><b>Choose music</b><small>Now playing: ${esc(sound.currentTrack.title)} · ${sound.musicSelection==='auto'?'Automatic':'Your selection'}</small></button><button class="choice" data-action="auto"><b>Automatic basic attacks · ${save.settings.autoAttack?'ON':'OFF'}</b><small>Targets the nearest enemy in range. You still control skills and dodges.</small></button><button class="choice" data-action="quality"><b>Graphics · ${save.settings.quality==='low'?'PERFORMANCE':'HIGH'}</b><small>${backend} renderer · Lower quality disables shadows and reduces resolution.</small></button><button class="choice" data-action="trees"><b>Tree designs · ${treeStyleName(save.settings.treeStyle)}</b><small>Compare the original artwork and saved 3D styles. Shortcut: T.</small></button><div class="controls-help"><p><b>WASD / arrows</b> Move · <b>Click ground</b> Walk to point<br><b>Space / click enemy</b> Basic attack · <b>Q</b> Skill · <b>F</b> Ultimate<br><b>Shift</b> Dodge · <b>R</b> Potion · <b>E</b> Interact<br><b>Right-drag / Z / C</b> Orbit · <b>Scroll</b> Zoom · <b>V</b> Reset view<br><b>I</b> Equipment · <b>J</b> Journal · <b>M</b> Map<br><b>T</b> Tree designs · <b>Esc / P</b> Pause</p></div><button class="primary" data-action="close">Back to the wild →</button><button class="secondary" data-action="title">Save & return to title</button>`);}
 function drawMap(c,full=false){const ctx=c.getContext('2d'),w=c.width,h=c.height,bo=world.bounds,pad=full?28:8;const px=x=>pad+(x-bo.minX)/(bo.maxX-bo.minX)*(w-pad*2),py=z=>h-pad-(z-bo.minZ)/(bo.maxZ-bo.minZ)*(h-pad*2),labels=[];ctx.fillStyle=zone==='dungeon'?'#252338':'#344f42';ctx.fillRect(0,0,w,h);
  if(zone==='overworld'){
   ctx.fillStyle='#a79974';ctx.fillRect(px(-27),py(25),px(27)-px(-27),py(-11)-py(25));
@@ -497,6 +549,12 @@ function startFishing(){fishing={start:t};openModal('<div class="eyebrow">MOONMI
 function catchFish(){if(!fishing)return;const n=(Math.sin((t-fishing.start)*2.3)+1)/2;if(n>.35&&n<.65){save.fish++;questEvent({type:'fish'});awardXP(20);sound.play('loot');toast('A silverfin!','Cook it for experience, or sell it at the camp kitchen.','♧');}else toast('It slipped away','Try again. Watch the golden marker.');closeModal();}
 function goHome(){closeModal();mode='play';save.gathered=save.bosses>0?[]:save.gathered;buildZone('overworld');save.hp=stats(save).maxHp;save.mana=stats(save).maxMana;invincible=2;announce('Hearthglen','A LITTLE LIGHT IN THE WILD');sound.play('portal');persist();}
 function modalAction(action){
+ if(action==='music'){musicLibrary();return;}
+ if(action==='music-back'){if(mode==='intro')closeModal();else settings();return;}
+ if(action==='music-toggle'){musicEnabled(!sound.enabled);syncMusicStatus();return;}
+ if(action==='music-next'){sound.nextMusic();musicEnabled();syncMusicStatus();return;}
+ if(action.startsWith('music-select:')){if(sound.selectMusic(action.slice(13))){musicEnabled();syncMusicStatus();}return;}
+
  if(action==='trees'){treeStyles();return;}
  if(action.startsWith('tree-style:'))return changeTreeStyle(action.slice(11));
  if(action.startsWith('quest-')){
@@ -528,7 +586,20 @@ function modalAction(action){
 }
 function applyQuality(){const low=save.settings.quality==='low';scene.shadowsEnabled=!low;engine.setHardwareScalingLevel(low?1.8:Math.max(1,devicePixelRatio/1.4));resize();}
 
-function updateHUD(){if(!hero)return;const st=stats(save),c=CLASSES[save.heroClass],q=trackedQuestInfo(save);$('hero-name').textContent=c.name;$('portrait').innerHTML=`<span style="font-size:25px;color:${c.color}">${c.icon}</span>`;$('level').textContent=save.level;$('hp-fill').style.width=clamp(save.hp/st.maxHp*100,0,100)+'%';$('hp-text').textContent=`${Math.ceil(save.hp)} / ${st.maxHp}`;$('mana-fill').style.width=clamp(save.mana/st.maxMana*100,0,100)+'%';$('mana-text').textContent=`${Math.floor(save.mana)} / ${st.maxMana}`;$('xp-fill').style.width=clamp(save.xp/xpNeeded(save.level)*100,0,100)+'%';$('coins').textContent=save.gold;$('shards').textContent=save.shards;$('quest-title').textContent=q.title;$('quest-body').textContent=q.text;$('quest-body').style.whiteSpace='pre-line';$('attack-name').textContent=c.attack;$('skill-name').textContent=c.skill;$('ultimate-name').textContent=c.ultimate;$('potion-count').textContent=save.potions;$('potion-button').disabled=!!hero.potion?.active;$('potion-button').setAttribute('aria-busy',String(!!hero.potion?.active));
+let actionbarClass='';
+function syncClassActionbar(c){
+ if(actionbarClass===save.heroClass)return;
+ const icons={knight:['sword','whirlwind','dawnfall'],mage:['starbolt','frost','starfall'],ranger:['bow','volley','rain']}[save.heroClass];
+ for(const [index,[id,kind,shortcut,keys]]of [['attack','Basic attack','Space','Space'],['skill','Class skill','Q / 1','Q 1'],['ultimate','Ultimate','F / 2','F 2']].entries()){
+  const button=$(id+'-button'),label=`${c[id]} · ${kind} (${shortcut})`;
+  $(id+'-name').textContent=c[id];
+  button.querySelector('use').setAttribute('href',`./assets/ability-icons.svg#${icons[index]}`);
+  button.title=label;button.setAttribute('aria-label',label);button.setAttribute('aria-keyshortcuts',keys);
+  if(id!=='attack')button.setAttribute('aria-describedby',id+'-cd');
+ }
+ actionbarClass=save.heroClass;
+}
+function updateHUD(){if(!hero)return;const st=stats(save),c=CLASSES[save.heroClass],q=trackedQuestInfo(save);syncClassActionbar(c);$('hero-name').textContent=c.name;$('portrait').innerHTML=`<span style="font-size:25px;color:${c.color}">${c.icon}</span>`;$('level').textContent=save.level;$('hp-fill').style.width=clamp(save.hp/st.maxHp*100,0,100)+'%';$('hp-text').textContent=`${Math.ceil(save.hp)} / ${st.maxHp}`;$('mana-fill').style.width=clamp(save.mana/st.maxMana*100,0,100)+'%';$('mana-text').textContent=`${Math.floor(save.mana)} / ${st.maxMana}`;$('xp-fill').style.width=clamp(save.xp/xpNeeded(save.level)*100,0,100)+'%';$('coins').textContent=save.gold;$('shards').textContent=save.shards;$('quest-title').textContent=q.title;$('quest-body').textContent=q.text;$('quest-body').style.whiteSpace='pre-line';$('potion-count').textContent=save.potions;$('potion-button').disabled=!!hero.potion?.active;$('potion-button').setAttribute('aria-busy',String(!!hero.potion?.active));
  for(const [id,cd]of [['skill',skillCD],['ultimate',ultCD],['dash',dashCD]]){$(id+'-cd').textContent=cd>0?Math.ceil(cd)+'s':'';$(id+'-button').classList.toggle('on-cooldown',cd>0);}
  drawMap($('minimap'));
  const soundButton=$('sound-button');soundButton.setAttribute('aria-pressed',String(save.settings.sound));soundButton.setAttribute('aria-label',save.settings.sound?'Mute music and sound':'Enable music and sound');$('sound-state').textContent=save.settings.sound?'ON':'OFF';
@@ -603,11 +674,13 @@ function tick(dt){if(mode==='intro'&&titlePaused)dt=0;t+=dt;world?.update(dt,t);
  if(hero.halo)hero.halo.position.y=contactShadowHeight(hero.root);if(fox.halo)fox.halo.position.y=contactShadowHeight(fox.root);
  if(sprites)for(const enemy of enemies){enemy.halo.position.y=contactShadowHeight(enemy.root);sprites.face(enemy.body,enemy.facing,camera.alpha);}
  hudTime+=dt;if(hudTime>.12&&mode!=='intro'){hudTime=0;if(mode==='play'&&!paused&&zone==='overworld')for(const landmark of world.landmarks)if(landmark.kind!=='town'&&dist(hero.root.position,landmark)<(landmark.radius||6))questEvent({type:'visit',id:landmark.id});updateHUD();const region=getRegion();$('zone-name').textContent=region[0];$('zone-sub').textContent=region[1];if(lastZone!==region[0]){if(lastZone&&mode==='play')announce(region[0],region[1]);lastZone=region[0];}}
- sound.update(zone,inCombat>0&&!paused&&mode==='play');
+ sound.update(mode==='intro'?'title':zone==='overworld'&&world.isSafe(hero.root.position.x,hero.root.position.z)?'town':zone,inCombat>0&&mode==='play');
+ syncMusicStatus();
 }
 function bind(){
  document.querySelectorAll('[data-title-action]').forEach(btn=>btn.onclick=()=>titleMenu(btn.dataset.titleAction));
- $('title-sound').onclick=()=>{titleMusic=!titleMusic;sound.unlock();sound.setEnabled(titleMusic);$('title-sound').setAttribute('aria-pressed',String(titleMusic));$('title-sound').setAttribute('aria-label',titleMusic?'Mute title music':'Enable title music');};
+ $('title-sound').onclick=()=>{titleMusic=!titleMusic;sound.update('title',false);sound.unlock();sound.setEnabled(titleMusic);$('title-sound').setAttribute('aria-pressed',String(titleMusic));$('title-sound').setAttribute('aria-label',titleMusic?'Mute title music':'Enable title music');};
+ $('title-library').onclick=()=>musicLibrary();
  $('title-pause').onclick=()=>{titlePaused=!titlePaused;$('title-pause').setAttribute('aria-pressed',String(titlePaused));$('title-pause').setAttribute('aria-label',titlePaused?'Resume animated backdrop':'Pause animated backdrop');$('title-pause').textContent=titlePaused?'▶':'Ⅱ';};
 
  document.querySelectorAll('[data-class]').forEach(btn=>btn.onclick=()=>{selectedClass=btn.dataset.class;document.querySelectorAll('[data-class]').forEach(b=>{b.classList.toggle('selected',b===btn);b.setAttribute('aria-pressed',b===btn?'true':'false');});const p=hero.root.position.clone();hero.root.dispose();hero=createHero(selectedClass);hero.root.position.copyFrom(p);sound.play('click');});
@@ -616,7 +689,9 @@ function bind(){
  $('bag-button').onclick=bag;$('journal-button').onclick=()=>journal();$('quest-log-button').onclick=()=>journal();$('settings-button').onclick=settings;$('map-button').onclick=map;$('minimap').onclick=map;$('sound-button').onclick=toggleSound;
  $('camera-left').onclick=()=>{camera.alpha-=Math.PI/4;};$('camera-right').onclick=()=>{camera.alpha+=Math.PI/4;};$('camera-reset').onclick=resetCamera;
  $('modal').addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;const action=el.dataset.action;if(action==='new-game'){launchAdventure();return;}if(action){if(['dungeon','home','travel','revive'].includes(action))transition(()=>modalAction(action),action==='dungeon'?'Opening the Hollow Sanctum…':'Following the lanterns home…');else modalAction(action);return;}if(el.dataset.equip){equip(save,el.dataset.equip);const st=stats(save);save.hp=Math.min(save.hp,st.maxHp);sound.play('loot');bag();persist();}if(el.dataset.sell){const i=save.inventory.findIndex(g=>g.id===el.dataset.sell);if(i>=0){save.gold+=save.inventory[i].price;save.inventory.splice(i,1);sound.play('coin');bag();persist();}}});
- window.addEventListener('keydown',e=>{if(transitioning)return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)&&mode==='play')e.preventDefault();if(e.target.tagName==='INPUT')return;if(mode==='intro'){if(e.code==='Escape'&&!$('modal').hidden)closeModal();return;}if(paused){if(e.code==='Escape'&&mode!=='dead')closeModal();if(e.code==='Space'&&fishing){e.preventDefault();catchFish();}return;}keys.add(e.code);if(e.repeat)return;switch(e.code){case'ShiftLeft':case'ShiftRight':dash();break;case'KeyQ':case'Digit1':skill();break;case'KeyF':case'Digit2':skill(true);break;case'KeyR':potion();break;case'KeyE':talk();break;case'KeyI':bag();break;case'KeyJ':journal();break;case'KeyM':map();break;case'KeyT':treeStyles();break;case'Escape':case'KeyP':settings();break;}});
+ $('modal').addEventListener('input',e=>{if(e.target.matches?.('[data-audio-volume]'))changeAudioVolume(e.target.dataset.audioVolume,Number(e.target.value));});
+ $('modal').addEventListener('change',e=>{if(e.target.matches?.('[data-audio-volume]'))changeAudioVolume(e.target.dataset.audioVolume,Number(e.target.value),true);});
+ window.addEventListener('keydown',e=>{if(transitioning)return;if(e.code!=='Escape'&&(paused||mode==='intro')&&e.target.closest?.('button,input,select,textarea'))return;if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)&&mode==='play')e.preventDefault();if(e.code!=='Escape'&&e.target.tagName==='INPUT')return;if(mode==='intro'){if(e.code==='Escape'&&!$('modal').hidden)closeModal();return;}if(paused){if(e.code==='Escape'&&mode!=='dead')closeModal();if(e.code==='Space'&&fishing){e.preventDefault();catchFish();}return;}keys.add(e.code);if(e.repeat)return;switch(e.code){case'ShiftLeft':case'ShiftRight':dash();break;case'KeyQ':case'Digit1':skill();break;case'KeyF':case'Digit2':skill(true);break;case'KeyR':potion();break;case'KeyE':talk();break;case'KeyI':bag();break;case'KeyJ':journal();break;case'KeyM':map();break;case'KeyT':treeStyles();break;case'Escape':case'KeyP':settings();break;}});
  window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();touch.x=touch.z=0;if(mode==='play'&&!paused)settings();});document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();persist();if(mode==='play'&&!paused)settings();}});window.addEventListener('beforeunload',persist);
  canvas.addEventListener('contextmenu',e=>e.preventDefault());
  const orbitTouches=new Map();let pinchLength=0;

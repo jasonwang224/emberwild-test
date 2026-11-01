@@ -1,9 +1,9 @@
 // Tree-only reconstruction of saved revision 9de1d1e. Original procedural geometry and surface paint.
-import {applyCelShading} from './cel-9de1d1e.js?v=e2609980';
-import {finishHistoricalBatch,scopeHistoricalStyle,assertTreeBuildActive} from './runtime.js?v=e2609980';
-import {installCanopyWind,CANOPY_WIND_PADDING} from '../canopy-wind.js?v=e2609980';
-import {createCanopyPaint} from './canopy-paint-9de1d1e.js?v=e2609980';
-import {treeAppearance,buildTreeCanopy,buildTreeBranches,buildTreeAccents,deformCanopyPositions} from './tree-canopy-9de1d1e.js?v=e2609980';
+import {applyCelShading} from './cel-9de1d1e.js?v=17317200';
+import {finishHistoricalBatch,scopeHistoricalStyle,assertTreeBuildActive} from './runtime.js?v=17317200';
+import {installCanopyWind,CANOPY_WIND_PADDING} from '../canopy-wind.js?v=17317200';
+import {createCanopyPaint} from './canopy-paint-9de1d1e.js?v=17317200';
+import {treeAppearance,buildTreeCanopy,buildTreeBranches,buildTreeAccents,deformCanopyPositions} from './tree-canopy-9de1d1e.js?v=17317200';
 
 export async function build(B,scene,options={}) {
   const root=new B.TransformNode('tree-style-9de1d1e',scene);root.setEnabled(false);if(options.parent)root.parent=options.parent;
