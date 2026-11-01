@@ -13,7 +13,7 @@ export async function createRenderer(B,canvas,{gpuAvailable,location,report=cons
   let gpu;
   try{
    if(await B.WebGPUEngine.IsSupportedAsync){
-    gpu=new B.WebGPUEngine(canvas,{antialias:true,glslangOptions:{jsPath:'./glslang.js?v=9517e800',wasmPath:'./glslang.wasm'},twgslOptions:{jsPath:'./twgsl.js?v=9517e800',wasmPath:'./twgsl.wasm'}});
+    gpu=new B.WebGPUEngine(canvas,{antialias:true,glslangOptions:{jsPath:'./glslang.js?v=efee0e5a',wasmPath:'./glslang.wasm'},twgslOptions:{jsPath:'./twgsl.js?v=efee0e5a',wasmPath:'./twgsl.wasm'}});
     await gpu.initAsync();
     recordDiagnostic(diagnosticStorage,null);
     return {engine:gpu,backend:'WebGPU'};

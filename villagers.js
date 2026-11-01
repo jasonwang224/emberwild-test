@@ -1,4 +1,4 @@
-import {TOWN_SAFE_BOUNDS,findClearPosition} from './world-navigation.js?v=9517e800';
+import {TOWN_SAFE_BOUNDS,findClearPosition} from './world-navigation.js?v=efee0e5a';
 
 export const TOWNSFOLK=Object.freeze([
  {id:'poppy',name:'Poppy · Gardener',kind:'inn',height:2.15,speed:.95,route:[[-3,-3],[-1,-1],[2,-2],[1,-4]],words:['Morning, friend!','Lovely day for a stroll.','May your boots stay dry!']},

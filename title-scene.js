@@ -1,4 +1,4 @@
-import {findClearPosition} from './world-navigation.js?v=9517e800';
+import {findClearPosition} from './world-navigation.js?v=efee0e5a';
 
 // Title-only visitors and atmosphere. They never enter the game's enemy,
 // interaction or save collections; disposing the title removes every extra.

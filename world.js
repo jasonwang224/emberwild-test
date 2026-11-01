@@ -1,24 +1,24 @@
 /* Emberwild — original procedural scenery. No external assets. */
-import {createMeadowTexture} from './meadow-texture.js?v=9517e800';
-import {buildMeadowDetail} from './meadow-detail.js?v=9517e800';
-import {installCanopyWind,CANOPY_WIND_PADDING} from './canopy-wind.js?v=9517e800';
-import {installEnvironmentPaint,applyEnvironmentPaintUV} from './environment-paint.js?v=9517e800';
-import {createCampMaterials,applyCampPaintUV} from './camp-paint.js?v=9517e800';
-import {createCanopyPaint,canopyPaintUV} from './canopy-paint.js?v=9517e800';
-import {treeAppearance,buildTreeCanopy,buildTreeBranches,buildTreeAccents} from './tree-canopy.js?v=9517e800';
-import {createTreeStyleController} from './tree-style-controller.js?v=9517e800';
-import {TOWN_PLAN,buildTownExpansion} from './town-expansion.js?v=9517e800';
-import {EXPANSION_BOUNDS,EXPANSION_ROUTES,expansionReservedAreas,buildWorldExpansion} from './world-expansion.js?v=9517e800';
-import {buildCampTerrain} from './camp-terrain.js?v=9517e800';
-import {dressCamps} from './camp-dressing.js?v=9517e800';
-import {isTownSafe,findClearPosition} from './world-navigation.js?v=9517e800';
-import {enemyProfile} from './enemy-profile.js?v=9517e800';
-import {createCircleQuery,createSegmentQuery} from './world-spatial-query.js?v=9517e800';
-import {canopyVertexLayout,deformCanopyTemplate,cachedCanopyPaintUV} from './canopy-vertex-cache.js?v=9517e800';
-import {applyBatchVertexData,uploadBatchGeometry} from './world-batch-geometry.js?v=9517e800';
-import {installWaterSurface} from './water-surface.js?v=9517e800';
-import {POND_DOCK,dockSurfaceHeight} from './pond-dock.js?v=9517e800';
-export {treeAppearance} from './tree-canopy.js?v=9517e800';
+import {createMeadowTexture} from './meadow-texture.js?v=efee0e5a';
+import {buildMeadowDetail} from './meadow-detail.js?v=efee0e5a';
+import {installCanopyWind,CANOPY_WIND_PADDING} from './canopy-wind.js?v=efee0e5a';
+import {installEnvironmentPaint,applyEnvironmentPaintUV} from './environment-paint.js?v=efee0e5a';
+import {createCampMaterials,applyCampPaintUV} from './camp-paint.js?v=efee0e5a';
+import {createCanopyPaint,canopyPaintUV} from './canopy-paint.js?v=efee0e5a';
+import {treeAppearance,buildTreeCanopy,buildTreeBranches,buildTreeAccents} from './tree-canopy.js?v=efee0e5a';
+import {createTreeStyleController} from './tree-style-controller.js?v=efee0e5a';
+import {TOWN_PLAN,buildTownExpansion} from './town-expansion.js?v=efee0e5a';
+import {EXPANSION_BOUNDS,EXPANSION_ROUTES,expansionReservedAreas,buildWorldExpansion} from './world-expansion.js?v=efee0e5a';
+import {buildCampTerrain} from './camp-terrain.js?v=efee0e5a';
+import {dressCamps} from './camp-dressing.js?v=efee0e5a';
+import {isTownSafe,findClearPosition} from './world-navigation.js?v=efee0e5a';
+import {enemyProfile} from './enemy-profile.js?v=efee0e5a';
+import {createCircleQuery,createSegmentQuery} from './world-spatial-query.js?v=efee0e5a';
+import {canopyVertexLayout,deformCanopyTemplate,cachedCanopyPaintUV} from './canopy-vertex-cache.js?v=efee0e5a';
+import {applyBatchVertexData,uploadBatchGeometry} from './world-batch-geometry.js?v=efee0e5a';
+import {installWaterSurface} from './water-surface.js?v=efee0e5a';
+import {POND_DOCK,dockSurfaceHeight} from './pond-dock.js?v=efee0e5a';
+export {treeAppearance} from './tree-canopy.js?v=efee0e5a';
 
 export function createWorld(B, scene, options = {}) {
   const dungeon = options.zone === 'dungeon';
@@ -822,7 +822,7 @@ export function createWorld(B, scene, options = {}) {
     torus('arena-inner-ring',0,.16,18,6.5,.045,M.rune);
     for(let j=0;j<16;j++){const a=j*Math.PI/8;box('arena-rune',Math.sin(a)*7.5,.17,18+Math.cos(a)*7.5,.25,.035,.8,M.rune).rotation.y=a;}
     for(const x of [-5,5])for(let z=-14;z<13;z+=4)box('dungeon-lane-rune',x,.075,z,.12,.025,.9,M.purple);
-    const exit=interact('exit','exit','Return to Willowmere',0,-17);
+    const exit=interact('exit','exit','Return to the Hollow Gate',0,-17);
     cylinder('exit-platform',0,.15,0,1.8,.3,M.dungeonStone,10,exit,false);torus('exit-ring',0,.35,0,1.45,.12,M.teal,exit,false);
     const exitGem=ball('exit-light',0,1.5,0,.45,M.crystal,exit,false,[.65,1.7,.65]);animated.push({type:'bob',mesh:exitGem,baseY:1.5,phase:0});
     chest('dungeonChest',12,25,true);

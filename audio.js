@@ -1,5 +1,5 @@
-import {CHIP_TRACKS, THEME_PLAYLISTS, scoreStep} from './chiptune-score.js?v=9517e800';
-import {createInstrumentBank, INSTRUMENT_NAMES} from './instrument-bank.js?v=9517e800';
+import {CHIP_TRACKS, THEME_PLAYLISTS, scoreStep} from './chiptune-score.js?v=efee0e5a';
+import {createInstrumentBank, INSTRUMENT_NAMES} from './instrument-bank.js?v=efee0e5a';
 
 /** Original handheld-inspired compositions and synthesized effects. No recordings or audio downloads. */
 export function createAudio() {

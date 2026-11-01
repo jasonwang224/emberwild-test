@@ -1,35 +1,35 @@
-import {enableRightDragOrbit} from './camera-controls.js?v=9517e800';
-import {createImpactFeedback} from './impact-effects.js?v=9517e800';
-import {createDashTrail} from './dash-trail.js?v=9517e800';
-import {createLootBeacon} from './loot-beacon.js?v=9517e800';
-import {createLootAppearance} from './loot-appearance.js?v=9517e800';
-import {createBossLane} from './boss-lane.js?v=9517e800';
-import {chooseTarget,enemyDistance,CREATURE_NAMES} from './targeting.js?v=9517e800';
-import {enemyProfile} from './enemy-profile.js?v=9517e800';
-import {createBossPresence} from './boss-presence.js?v=9517e800';
-import {createWorldLighting,setWorldLighting} from './lighting.js?v=9517e800';
-import {createWorld} from './world.js?v=9517e800';
-import {normalizeTreeStyle} from './tree-style-options.js?v=9517e800';
-import {treeStyleMenuHTML,treeStyleName} from './tree-style-ui.js?v=9517e800';
-import {findClearPosition,resolveMovement} from './world-navigation.js?v=9517e800';
-import {createAudio} from './audio.js?v=9517e800';
-import {CHIP_TRACKS,THEME_PLAYLISTS} from './chiptune-score.js?v=9517e800';
-import {createSpriteLibrary} from './sprites.js?v=9517e800';
-import {applyCelShading} from './cel.js?v=9517e800';
-import {createVillagers} from './villagers.js?v=9517e800';
-import {createCampRescues} from './camp-rescues.js?v=9517e800';
-import {createTownGuards,GUARD_REACH} from './town-guards.js?v=9517e800';
-import {createQuestMarkers} from './quest-markers.js?v=9517e800';
-import {QUESTS,questStatus,questObjectives,acceptQuest,claimQuest,recordQuestEvent,setTrackedQuest} from './quests.js?v=9517e800';
-import {mainQuestView,sideQuestView,questCardHTML,questObjectiveHTML,questRewardText,questLogHTML,questDialogueHTML,questGiverHTML,trackedQuestInfo,questGiverState as getQuestGiverState} from './quest-ui.js?v=9517e800';
-import {createRenderer} from './renderer.js?v=9517e800';
-import {bindGameLifecycle} from './game-lifecycle.js?v=9517e800';
-import {createCombatVisuals} from './combat-visuals.js?v=9517e800';
-import {createPotionAnimation} from './potion-animation.js?v=9517e800';
-import {createHealingEffects} from './healing-effects.js?v=9517e800';
-import {createTitleScene} from './title-scene.js?v=9517e800';
-import {createAbilityEffects,ABILITY_CUES} from './ability-effects.js?v=9517e800';
-import {CLASSES,SAVE_KEY,newGame,stats,addXP,xpNeeded,makeLoot,equip,parseSave,questInfo,RARITIES} from './core.js?v=9517e800';
+import {enableRightDragOrbit} from './camera-controls.js?v=efee0e5a';
+import {createImpactFeedback} from './impact-effects.js?v=efee0e5a';
+import {createDashTrail} from './dash-trail.js?v=efee0e5a';
+import {createLootBeacon} from './loot-beacon.js?v=efee0e5a';
+import {createLootAppearance} from './loot-appearance.js?v=efee0e5a';
+import {createBossLane} from './boss-lane.js?v=efee0e5a';
+import {chooseTarget,enemyDistance,CREATURE_NAMES} from './targeting.js?v=efee0e5a';
+import {enemyProfile} from './enemy-profile.js?v=efee0e5a';
+import {createBossPresence} from './boss-presence.js?v=efee0e5a';
+import {createWorldLighting,setWorldLighting} from './lighting.js?v=efee0e5a';
+import {createWorld} from './world.js?v=efee0e5a';
+import {normalizeTreeStyle} from './tree-style-options.js?v=efee0e5a';
+import {treeStyleMenuHTML,treeStyleName} from './tree-style-ui.js?v=efee0e5a';
+import {findClearPosition,resolveMovement} from './world-navigation.js?v=efee0e5a';
+import {createAudio} from './audio.js?v=efee0e5a';
+import {CHIP_TRACKS,THEME_PLAYLISTS} from './chiptune-score.js?v=efee0e5a';
+import {createSpriteLibrary} from './sprites.js?v=efee0e5a';
+import {applyCelShading} from './cel.js?v=efee0e5a';
+import {createVillagers} from './villagers.js?v=efee0e5a';
+import {createCampRescues} from './camp-rescues.js?v=efee0e5a';
+import {createTownGuards,GUARD_REACH} from './town-guards.js?v=efee0e5a';
+import {createQuestMarkers} from './quest-markers.js?v=efee0e5a';
+import {QUESTS,questStatus,questObjectives,acceptQuest,claimQuest,recordQuestEvent,setTrackedQuest} from './quests.js?v=efee0e5a';
+import {mainQuestView,sideQuestView,questCardHTML,questObjectiveHTML,questRewardText,questLogHTML,questDialogueHTML,questGiverHTML,trackedQuestInfo,questGiverState as getQuestGiverState} from './quest-ui.js?v=efee0e5a';
+import {createRenderer} from './renderer.js?v=efee0e5a';
+import {bindGameLifecycle} from './game-lifecycle.js?v=efee0e5a';
+import {createCombatVisuals} from './combat-visuals.js?v=efee0e5a';
+import {createPotionAnimation} from './potion-animation.js?v=efee0e5a';
+import {createHealingEffects} from './healing-effects.js?v=efee0e5a';
+import {createTitleScene} from './title-scene.js?v=efee0e5a';
+import {createAbilityEffects,ABILITY_CUES} from './ability-effects.js?v=efee0e5a';
+import {CLASSES,SAVE_KEY,newGame,stats,addXP,xpNeeded,makeLoot,equip,parseSave,questInfo,RARITIES} from './core.js?v=efee0e5a';
 
 const $=id=>document.getElementById(id),B=window.BABYLON,V=B?.Vector3;
 const canvas=$('game'),sound=createAudio();
@@ -400,7 +400,7 @@ function talk(){if(mode!=='play'||paused)return;if(!nearby){toast('A little clos
  if(o.type==='chest'){const camp=world.camps.find(c=>c.chestId===o.id),guards=camp?enemies.filter(e=>e.campId===camp.id).length:0;if(guards){toast('The cache is guarded',`${camp.name} · defeat ${guards} remaining creature${guards===1?'':'s'} first.`,'⚑');return;}const key=zone==='dungeon'?o.id+'-'+save.ascension:o.id;if(save.chests.includes(key))return;save.chests.push(key);o.mesh.setEnabled(false);const item=makeLoot(save.level+1,save.heroClass,.8+Math.random()*.2);grantItem(item);save.gold+=30;save.shards+=2;save.totalGold+=30;awardXP(30);burst(new V(o.x,1,o.z),'#ecc875',16);toast('A treasure worth the detour',`${item.name} · +30 gold · +2 shards`,'♜');sound.play('loot');persist();}
  if(o.type==='shrine'){if(save.shrines.includes(o.id)){toast('The waystone is awake','Its light reaches all the way to Hearthglen.','✧');return;}if(save.shards<3){toast('The stone is waiting',`You need 3 ember shards. You have ${save.shards}.`,'◇');return;}save.shards-=3;save.shrines.push(o.id);world.setShrineActive(o.id);save.hp=stats(save).maxHp;awardXP(90);save.gold+=40;ring(new V(o.x,0,o.z),5,'#ade5c1',1.5);sound.play('quest');announce('A waystone awakens',`${save.shrines.length} OF 3 · HEALTH RESTORED`);spawnEnemy('golem',o.x+3,o.z+3,save.level);if(save.shrines.length===3){toast('The northern gate opens','The Hollow King awaits beyond the ruins.','♛');}persist();}
  if(o.type==='portal'){if(save.shrines.length<3){toast('Sealed by old magic',`Restore all three waystones first · ${save.shrines.length}/3`,'◇');return;}openModal(`<div class="eyebrow">THE HOLLOW SANCTUM</div><h2 class="modal-title">Beyond the last lantern.</h2><p>Ancient guardians. A fallen king. A crown that still remembers the sun.</p><div class="stats-grid"><div><b>${save.ascension+1}</b><small>ASCENSION</small></div><div><b>${save.level}</b><small>YOUR LEVEL</small></div><div><b>${save.potions}</b><small>POTIONS</small></div></div><p class="muted">Dodge the red danger zones. Higher ascensions bring tougher enemies and better rewards.</p><button class="primary" data-action="dungeon">Enter the sanctum →</button>`);}
- if(o.type==='exit')goHome();if(o.type==='fishing')startFishing();
+ if(o.type==='exit')transition(()=>returnToOverworld('gate'),'Returning through the Hollow Gate…');if(o.type==='fishing')startFishing();
 }
 function smith(){openModal(`<div class="eyebrow">BRAMBLE & STEEL · BLACKSMITH</div><h2 class="modal-title">Good steel. Better stories.</h2><p>Bram can temper your weapon, or find something special in the old supply crates.</p><div class="stats-grid"><div><b>${save.gold}</b><small>YOUR GOLD</small></div><div><b>+${save.forge*4}</b><small>FORGE DAMAGE</small></div></div><button class="choice" data-action="forge"><b>Temper your weapon · ${50+save.forge*35} gold</b><small>Permanently gain +4 damage. Keeps working when you swap weapons.</small></button><button class="choice" data-action="buy-relic"><b>A wanderer’s relic · ${60+save.level*12} gold</b><small>A random piece of equipment at your level. Uncommon or better.</small></button><button class="secondary" data-action="bag">Open equipment bag →</button>`);}
 function inn(){openModal(`<div class="eyebrow">THE LITTLE LANTERN · INN</div><h2 class="modal-title">Come in. Catch your breath.</h2><p>There’s always a bed for a friend of the valley. Lysa keeps her best potions under the counter.</p><div class="stats-grid"><div><b>${save.gold}</b><small>GOLD</small></div><div><b>${save.potions}</b><small>POTIONS</small></div></div><button class="choice" data-action="rest"><b>Rest by the hearth · Free</b><small>Restore all health and mana.</small></button><button class="choice" data-action="buy-potion"><b>Buy a healing draught · 15 gold</b><small>Restores 60% health and 35 mana. Press R to drink.</small></button>`);}
@@ -566,7 +566,23 @@ function drawMap(c,full=false){const ctx=c.getContext('2d'),w=c.width,h=c.height
 function map(){openModal(`<div class="eyebrow">${zone==='dungeon'?'THE HOLLOW SANCTUM':'THE EMBER VALLEY'}</div><h2 class="modal-title">There’s more beyond the path.</h2><div class="map-wrap"><canvas id="large-map" width="520" height="460" aria-label="World map"></canvas></div><p class="map-legend">● You &nbsp; ◆ Waystone &nbsp; ◉ Gate &nbsp; ! Quest giver &nbsp; ? Reward &nbsp; <span style="color:#d88875">●</span> Creatures &nbsp; ⚑ Camp &nbsp; ✦ Landmark</p>${mode==='intro'?'<button class="secondary" data-action="close">Back to the start menu</button>':`<button class="secondary" data-action="travel">Return to Hearthglen ${inCombat>0?'· unavailable in combat':''}</button>`}`);drawMap($('large-map'),true);}
 function startFishing(){fishing={start:t};openModal('<div class="eyebrow">MOONMIRROR POND</div><h2 class="modal-title">Something took the bait.</h2><p>Reel in when the golden marker is inside the green zone.</p><div class="fish-track"><div class="fish-zone"></div><div class="fish-marker" id="fish-marker"></div></div><button class="primary" data-action="catch">Reel it in! · Space</button><p class="muted">A quiet moment can still be an adventure.</p>');sound.play('fish');}
 function catchFish(){if(!fishing)return;const n=(Math.sin((t-fishing.start)*2.3)+1)/2;if(n>.35&&n<.65){save.fish++;questEvent({type:'fish'});awardXP(20);sound.play('loot');toast('A silverfin!','Cook it for experience, or sell it at the camp kitchen.','♧');}else toast('It slipped away','Try again. Watch the golden marker.');closeModal();}
-function goHome(){closeModal();mode='play';save.gathered=save.bosses>0?[]:save.gathered;buildZone('overworld');save.hp=stats(save).maxHp;save.mana=stats(save).maxMana;invincible=2;announce('Hearthglen','A LITTLE LIGHT IN THE WILD');sound.play('portal');persist();}
+function returnToOverworld(destination='town'){
+ closeModal();mode='play';save.gathered=save.bosses>0?[]:save.gathered;buildZone('overworld');
+ if(destination==='gate'){
+  // Resolve the town-facing landing from the gate in the rebuilt world. This
+  // also works for adventures saved inside the dungeon before this change.
+  const gate=world.interactables.find(o=>o.type==='portal');
+  const landing=findClearPosition({x:gate.x,z:gate.z-3.5},world.obstacles,world.bounds,.48);
+  hero.root.position.set(landing.x,world.surfaceHeight?.(landing.x,landing.z)||0,landing.z);
+  const companion=findClearPosition({x:landing.x+1,z:landing.z-1},world.obstacles,world.bounds,.3,landing);
+  fox.root.position.set(companion.x,world.surfaceHeight?.(companion.x,companion.z)||0,companion.z);
+  camTarget.copyFrom(hero.root.position);camera.target.set(camTarget.x,.5,camTarget.z);
+  lastFacing.set(0,0,-1);hero.root.rotation.y=Math.PI;
+ }
+ save.hp=stats(save).maxHp;save.mana=stats(save).maxMana;invincible=2;
+ announce(destination==='gate'?'The Hollow Gate':'Hearthglen',destination==='gate'?'BACK IN THE EMBER VALLEY':'A LITTLE LIGHT IN THE WILD');sound.play('portal');persist();
+}
+function goHome(){returnToOverworld();}
 function modalAction(action){
  if(action==='music'){musicLibrary();return;}
  if(action==='music-back'){if(mode==='intro')closeModal();else settings();return;}
