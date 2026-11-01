@@ -1,5 +1,5 @@
-import {normalizeTreeStyle} from './tree-style-options.js?v=efee0e5a';
-import {createTreeStyleRenderer} from './tree-style-renderer.js?v=efee0e5a';
+import {normalizeTreeStyle} from './tree-style-options.js?v=ec1ec11a';
+import {createTreeStyleRenderer} from './tree-style-renderer.js?v=ec1ec11a';
 
 // Own only tree visuals. Navigation, encounters and interactions stay in place.
 export function createTreeStyleController(B,scene,{root,trees,currentMeshes,shadowCasters}) {

@@ -1,4 +1,4 @@
-import {advanceBounce} from './animation.js?v=efee0e5a';
+import {advanceBounce} from './animation.js?v=ec1ec11a';
 // Original HD2D sprite atlas: crisp pixels, alpha-tested silhouettes, real 3D placement.
 export function directionFrame(direction,alpha){const right=-Math.sin(alpha)*direction.x+Math.cos(alpha)*direction.z,toward=Math.cos(alpha)*direction.x+Math.sin(alpha)*direction.z;return (Math.round(Math.atan2(right,toward)/(Math.PI/4))+8)%8;}
 // Measured alpha bounds of the separate 4-by-2 town-watch sheet. Each view

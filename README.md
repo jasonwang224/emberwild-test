@@ -2,7 +2,7 @@
 
 A standalone browser RPG built with Babylon.js, WebGPU with automatic WebGL fallback, painted 3D scenery and directional 2D characters. This package includes all ten tree designs and the full-quality game assets.
 
-Source snapshot: `efee0e5a9b9fab3356b4ebe857e1ac157b0cb412` (published Sites version 46).
+Source snapshot: `ec1ec11a8b751d852d9fc6ff8d4a993cc7f01e7d` (published Sites version 47).
 
 This export includes the animated start screen, loading progress, distinct eight-direction town-watch uniforms, class-specific pixel skill icons, nine fuller instrumental music arrangements, separate music/effects volume controls, camp rescues, and the latest world art. `build-info.json` records the source version and SHA-256 hashes of every game file.
 

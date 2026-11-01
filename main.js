@@ -1,35 +1,36 @@
-import {enableRightDragOrbit} from './camera-controls.js?v=efee0e5a';
-import {createImpactFeedback} from './impact-effects.js?v=efee0e5a';
-import {createDashTrail} from './dash-trail.js?v=efee0e5a';
-import {createLootBeacon} from './loot-beacon.js?v=efee0e5a';
-import {createLootAppearance} from './loot-appearance.js?v=efee0e5a';
-import {createBossLane} from './boss-lane.js?v=efee0e5a';
-import {chooseTarget,enemyDistance,CREATURE_NAMES} from './targeting.js?v=efee0e5a';
-import {enemyProfile} from './enemy-profile.js?v=efee0e5a';
-import {createBossPresence} from './boss-presence.js?v=efee0e5a';
-import {createWorldLighting,setWorldLighting} from './lighting.js?v=efee0e5a';
-import {createWorld} from './world.js?v=efee0e5a';
-import {normalizeTreeStyle} from './tree-style-options.js?v=efee0e5a';
-import {treeStyleMenuHTML,treeStyleName} from './tree-style-ui.js?v=efee0e5a';
-import {findClearPosition,resolveMovement} from './world-navigation.js?v=efee0e5a';
-import {createAudio} from './audio.js?v=efee0e5a';
-import {CHIP_TRACKS,THEME_PLAYLISTS} from './chiptune-score.js?v=efee0e5a';
-import {createSpriteLibrary} from './sprites.js?v=efee0e5a';
-import {applyCelShading} from './cel.js?v=efee0e5a';
-import {createVillagers} from './villagers.js?v=efee0e5a';
-import {createCampRescues} from './camp-rescues.js?v=efee0e5a';
-import {createTownGuards,GUARD_REACH} from './town-guards.js?v=efee0e5a';
-import {createQuestMarkers} from './quest-markers.js?v=efee0e5a';
-import {QUESTS,questStatus,questObjectives,acceptQuest,claimQuest,recordQuestEvent,setTrackedQuest} from './quests.js?v=efee0e5a';
-import {mainQuestView,sideQuestView,questCardHTML,questObjectiveHTML,questRewardText,questLogHTML,questDialogueHTML,questGiverHTML,trackedQuestInfo,questGiverState as getQuestGiverState} from './quest-ui.js?v=efee0e5a';
-import {createRenderer} from './renderer.js?v=efee0e5a';
-import {bindGameLifecycle} from './game-lifecycle.js?v=efee0e5a';
-import {createCombatVisuals} from './combat-visuals.js?v=efee0e5a';
-import {createPotionAnimation} from './potion-animation.js?v=efee0e5a';
-import {createHealingEffects} from './healing-effects.js?v=efee0e5a';
-import {createTitleScene} from './title-scene.js?v=efee0e5a';
-import {createAbilityEffects,ABILITY_CUES} from './ability-effects.js?v=efee0e5a';
-import {CLASSES,SAVE_KEY,newGame,stats,addXP,xpNeeded,makeLoot,equip,parseSave,questInfo,RARITIES} from './core.js?v=efee0e5a';
+import {enableRightDragOrbit} from './camera-controls.js?v=ec1ec11a';
+import {createImpactFeedback} from './impact-effects.js?v=ec1ec11a';
+import {createDashTrail} from './dash-trail.js?v=ec1ec11a';
+import {createLootBeacon} from './loot-beacon.js?v=ec1ec11a';
+import {createLootAppearance} from './loot-appearance.js?v=ec1ec11a';
+import {createBossLane} from './boss-lane.js?v=ec1ec11a';
+import {chooseTarget,enemyDistance,CREATURE_NAMES} from './targeting.js?v=ec1ec11a';
+import {enemyProfile} from './enemy-profile.js?v=ec1ec11a';
+import {createBossPresence} from './boss-presence.js?v=ec1ec11a';
+import {createWorldLighting,setWorldLighting} from './lighting.js?v=ec1ec11a';
+import {createWorld} from './world.js?v=ec1ec11a';
+import {normalizeTreeStyle} from './tree-style-options.js?v=ec1ec11a';
+import {treeStyleMenuHTML,treeStyleName} from './tree-style-ui.js?v=ec1ec11a';
+import {findClearPosition,resolveMovement} from './world-navigation.js?v=ec1ec11a';
+import {createAudio} from './audio.js?v=ec1ec11a';
+import {CHIP_TRACKS,THEME_PLAYLISTS} from './chiptune-score.js?v=ec1ec11a';
+import {createSpriteLibrary} from './sprites.js?v=ec1ec11a';
+import {applyCelShading} from './cel.js?v=ec1ec11a';
+import {createVillagers} from './villagers.js?v=ec1ec11a';
+import {createCampRescues} from './camp-rescues.js?v=ec1ec11a';
+import {createTownGuards,GUARD_REACH} from './town-guards.js?v=ec1ec11a';
+import {createQuestMarkers} from './quest-markers.js?v=ec1ec11a';
+import {QUESTS,questStatus,questObjectives,acceptQuest,claimQuest,recordQuestEvent,setTrackedQuest} from './quests.js?v=ec1ec11a';
+import {mainQuestView,sideQuestView,questCardHTML,questObjectiveHTML,questRewardText,questLogHTML,questDialogueHTML,questGiverHTML,trackedQuestInfo,questGiverState as getQuestGiverState} from './quest-ui.js?v=ec1ec11a';
+import {createRenderer} from './renderer.js?v=ec1ec11a';
+import {bindGameLifecycle} from './game-lifecycle.js?v=ec1ec11a';
+import {createCombatVisuals} from './combat-visuals.js?v=ec1ec11a';
+import {createPotionAnimation} from './potion-animation.js?v=ec1ec11a';
+import {createHealingEffects} from './healing-effects.js?v=ec1ec11a';
+import {createTitleScene} from './title-scene.js?v=ec1ec11a';
+import {createNotificationQueue} from './notification-queue.js?v=ec1ec11a';
+import {createAbilityEffects,ABILITY_CUES} from './ability-effects.js?v=ec1ec11a';
+import {CLASSES,SAVE_KEY,newGame,stats,addXP,xpNeeded,makeLoot,equip,parseSave,questInfo,RARITIES} from './core.js?v=ec1ec11a';
 
 const $=id=>document.getElementById(id),B=window.BABYLON,V=B?.Vector3;
 const canvas=$('game'),sound=createAudio();
@@ -53,8 +54,16 @@ function ring(pos,r,color,life=.5){const m=B.MeshBuilder.CreateTorus('spell ring
 function slash(pos,facing){const paths=[[],[]],angle=Math.atan2(facing.x,facing.z);for(let i=0;i<=18;i++){const a=angle-.95+i/18*1.9;for(let j=0;j<2;j++){const r=1.6+j*.38*Math.sin(i/18*Math.PI);paths[j].push(new V(Math.sin(a)*r,.65,Math.cos(a)*r));}}const mesh=B.MeshBuilder.CreateRibbon('sunsteel arc',{pathArray:paths,sideOrientation:B.Mesh.DOUBLESIDE},scene);mesh.position.copyFrom(pos);mesh.material=mat('#fff1b6',1);mesh.isPickable=false;effects.push({mesh,life:.18,max:.18,kind:'ring'});}
 function burst(pos,color,n=9){for(let i=0;i<n;i++){const m=sphere('mote',pos.clone(),new V(.13,.13,.13),color);m.material=mat(color,.7);effects.push({mesh:m,life:.5+Math.random()*.35,max:.85,kind:'spark',velocity:new V((Math.random()-.5)*5,Math.random()*4,(Math.random()-.5)*5)});}}
 function floating(text,pos,color='#fff2ce',big=false){const el=document.createElement('div');el.className='floating-number'+(big?' big':'');el.textContent=text;el.style.color=color;$('float-layer').append(el);floaters.push({el,pos:pos.clone(),life:1.2});}
-function toast(title,body='',icon='✦'){const el=document.createElement('div');el.className='game-toast';el.innerHTML=`<span>${icon}</span><div><b>${esc(title)}</b>${body?`<small>${esc(body)}</small>`:''}</div>`;$('toast-stack').append(el);setTimeout(()=>el.remove(),4500);}
-function announce(title,sub=''){const el=$('zone-banner');el.innerHTML=`<small>${esc(sub)}</small><strong>${esc(title)}</strong>`;el.hidden=false;el.classList.add('visible');setTimeout(()=>{el.classList.remove('visible');el.hidden=true;},3200);}
+const notifications=createNotificationQueue({setTimer:setTimeout,clearTimer:clearTimeout,show(message){
+ if(message.kind==='announcement'){
+  const el=$('zone-banner');el.innerHTML=`<small>${esc(message.body)}</small><strong>${esc(message.title)}</strong>`;el.hidden=false;el.classList.add('visible');
+  return ()=>{el.classList.remove('visible');el.hidden=true;};
+ }
+ const el=document.createElement('div');el.className='game-toast';el.innerHTML=`<span>${esc(message.icon)}</span><div><b>${esc(message.title)}</b>${message.body?`<small>${esc(message.body)}</small>`:''}</div>`;
+ $('toast-stack').append(el);return ()=>el.remove();
+}});
+function toast(title,body='',icon='✦'){notifications.push({kind:'toast',title,body,icon,duration:4500});}
+function announce(title,sub=''){notifications.push({kind:'announcement',title,body:sub,duration:3200});}
 function attachHeroEffects(actor,cls){
  actor.restBodyScale=actor.body.scaling.clone();
  actor.weaponParts=actor.sprite?[]:[actor.weapon,...actor.root.getChildMeshes().filter(mesh=>mesh.name==='guard'||mesh.name==='star crystal')];
@@ -90,7 +99,7 @@ function createFox(){const root=new B.TransformNode('fox',scene);if(sprites){con
 async function boot(){
  const lifecycle=bindGameLifecycle(window,{
   stopRenderLoop:()=>engine?.stopRenderLoop(),persist:()=>{if(hero&&mode!=='intro')persist();},
-  disposeWorld:()=>{try{clearTitleBackdrop();clearZoneActors();}finally{world?.dispose();}},disposeScene:()=>scene?.dispose(),
+  disposeWorld:()=>{try{notifications.dispose();clearTitleBackdrop();clearZoneActors();}finally{world?.dispose();}},disposeScene:()=>scene?.dispose(),
   disposeSprites:()=>sprites?.dispose(),disposeSound:()=>sound.dispose(),disposeEngine:()=>engine?.dispose(),
   onError:(stage,error)=>console.info('Page cleanup:',stage,error)
  });
@@ -167,7 +176,7 @@ function titleMenu(action){
  if(action==='town'){openModal('<div class="eyebrow">A PLACE TO CALL HOME</div><h2 class="modal-title">Welcome to Hearthglen.</h2><p class="dialogue">Rest by the fountain, meet Elder Rowan, and find your first quest. Bram forges your equipment, Lysa keeps the inn warm, and Mira always has something cooking.</p><p>Beyond the gates: flowering meadows, hidden treasures, enemy camps, and ancient waystones.</p><button class="secondary" data-action="close">Back to the town square</button>');return;}
  if(action==='controls')openModal('<div class="eyebrow">YOUR ADVENTURE STARTS HERE</div><h2 class="modal-title">Find your own path.</h2><div class="title-help-keys"><kbd>WASD / Arrows</kbd><span>Move around the world</span><kbd>Space · Q · F</kbd><span>Attack, class skill, and ultimate</span><kbd>R · Shift</kbd><span>Drink a potion · Dash</span><kbd>E</kbd><span>Talk, gather, and interact</span><kbd>I · J · M</kbd><span>Inventory · Quests · Map</span><kbd>Right mouse + drag</kbd><span>Rotate the camera · Scroll to zoom</span></div><p>On touch screens, use the movement stick and action buttons. Your adventure saves on this device.</p><button class="secondary" data-action="close">Ready to explore</button>');
 }
-function resetDynamics(){clearTitleBackdrop();worldGeneration++;cancelPotion();hero?.healing?.clear();hero?.combat?.cancel();abilityEffects?.clear();impacts?.clear();dashTrail?.clear();enemies.forEach(e=>{e.root.dispose();e.hpMesh?.dispose();});enemies=[];for(const list of [projectiles,effects,drops,telegraphs]){list.forEach(e=>e.mesh?.dispose());list.length=0;}floaters.forEach(f=>f.el.remove());floaters=[];respawns=[];boss=null;target=null;preferredTarget=null;targetMarker?.setEnabled(false);nearby=null;clickTarget=null;}
+function resetDynamics(){notifications.clear();clearTitleBackdrop();worldGeneration++;cancelPotion();hero?.healing?.clear();hero?.combat?.cancel();abilityEffects?.clear();impacts?.clear();dashTrail?.clear();enemies.forEach(e=>{e.root.dispose();e.hpMesh?.dispose();});enemies=[];for(const list of [projectiles,effects,drops,telegraphs]){list.forEach(e=>e.mesh?.dispose());list.length=0;}floaters.forEach(f=>f.el.remove());floaters=[];respawns=[];boss=null;target=null;preferredTarget=null;targetMarker?.setEnabled(false);nearby=null;clickTarget=null;}
 function clearZoneActors(){questMarkers?.dispose();questMarkers=null;villagers?.dispose();villagers=null;campRescues?.dispose();campRescues=null;townGuards?.dispose();townGuards=null;}
 function characterSpeech(item,text,actor,life=2.8){
  if(mode!=='play')return;

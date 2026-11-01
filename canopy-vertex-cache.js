@@ -1,5 +1,5 @@
-import {deformCanopyPositions} from './tree-canopy.js?v=efee0e5a';
-import {canopyPaintUV} from './canopy-paint.js?v=efee0e5a';
+import {deformCanopyPositions} from './tree-canopy.js?v=ec1ec11a';
+import {canopyPaintUV} from './canopy-paint.js?v=ec1ec11a';
 
 const layouts=new WeakMap();
 const coordinate=value=>Object.is(value,-0)?'-0':String(value);

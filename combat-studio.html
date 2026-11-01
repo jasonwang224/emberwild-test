@@ -10,20 +10,20 @@
 <aside><small id="class-label">WARRIOR · SUNSTEEL</small><strong id="phase" aria-live="polite">Ready when you are.</strong><p id="detail">A small sword and shield. A full arm sweep, with a bright crescent at impact.</p><div class="bar"><div id="progress"></div></div></aside>
 <div class="hint">Drag to orbit · Scroll to zoom<br>Space to attack · Q skill · F ultimate<br>Your adventure save stays untouched.</div>
 <div class="controls"><div class="row" aria-label="Choose hero"><button data-class="knight" aria-pressed="true">Warrior</button><button data-class="mage" aria-pressed="false">Mage</button><button data-class="ranger" aria-pressed="false">Ranger</button><button id="attack" class="primary" disabled>Attack · Space</button><button id="skill" disabled>Skill · Q</button><button id="ultimate" disabled>Ultimate · F</button></div><div class="row"><button id="angle">Turn hero ↻</button><button id="orbit">Orbit view ↻</button><button id="speed" aria-pressed="false">Speed · 1×</button><button id="freeze" aria-pressed="false">Freeze</button><button id="step" disabled title="Advance the frozen animation by 1/30 second">Step 1 frame</button><button id="sound" aria-pressed="true">Sound · On</button><a href="./">Back to adventure</a></div><div class="row" aria-label="World feedback previews"><button id="preview-lane" disabled>Boss lane</button><button id="preview-dash" disabled>Dash trail</button><button id="preview-loot" disabled>Show loot</button><button id="rarity" disabled>Rarity · Rare</button><button id="preview-reset" disabled>Reset preview</button></div></div>
-<script src="./babylon.js?v=efee0e5a"></script><script type="module">
-import {enableRightDragOrbit} from './camera-controls.js?v=efee0e5a';
-import {createRenderer} from './renderer.js?v=efee0e5a';
-import {createSpriteLibrary} from './sprites.js?v=efee0e5a';
-import {createCombatVisuals} from './combat-visuals.js?v=efee0e5a';
-import {createAbilityEffects,ABILITY_NAMES,ABILITY_CUES} from './ability-effects.js?v=efee0e5a';
-import {createAudio} from './audio.js?v=efee0e5a';
-import {createBossLane} from './boss-lane.js?v=efee0e5a';
-import {enemyProfile} from './enemy-profile.js?v=efee0e5a';
-import {createDashTrail} from './dash-trail.js?v=efee0e5a';
-import {createLootBeacon} from './loot-beacon.js?v=efee0e5a';
-import {createLootAppearance} from './loot-appearance.js?v=efee0e5a';
-import {createImpactFeedback} from './impact-effects.js?v=efee0e5a';
-import {RARITIES} from './core.js?v=efee0e5a';
+<script src="./babylon.js?v=ec1ec11a"></script><script type="module">
+import {enableRightDragOrbit} from './camera-controls.js?v=ec1ec11a';
+import {createRenderer} from './renderer.js?v=ec1ec11a';
+import {createSpriteLibrary} from './sprites.js?v=ec1ec11a';
+import {createCombatVisuals} from './combat-visuals.js?v=ec1ec11a';
+import {createAbilityEffects,ABILITY_NAMES,ABILITY_CUES} from './ability-effects.js?v=ec1ec11a';
+import {createAudio} from './audio.js?v=ec1ec11a';
+import {createBossLane} from './boss-lane.js?v=ec1ec11a';
+import {enemyProfile} from './enemy-profile.js?v=ec1ec11a';
+import {createDashTrail} from './dash-trail.js?v=ec1ec11a';
+import {createLootBeacon} from './loot-beacon.js?v=ec1ec11a';
+import {createLootAppearance} from './loot-appearance.js?v=ec1ec11a';
+import {createImpactFeedback} from './impact-effects.js?v=ec1ec11a';
+import {RARITIES} from './core.js?v=ec1ec11a';
 const B=BABYLON,V=B.Vector3,$=s=>document.querySelector(s),canvas=$('#stage'),audio=createAudio();
 let engine,scene,camera,sprites,hero,heroHalo,abilityEffects,dashTrail,impacts,cls='knight',frozen=false,slow=false,sound=true,turn=0,flight=[],count=0;
 let preview='combat',lane=null,dummy=null,dashPreview=null,lootPreview=null,lootBeacon=null,lootCollecting=false,dropKind='gear',rarityIndex=2,previewTime=0;

@@ -9,15 +9,15 @@
 <div class="status" id="status" role="status">Opening the sanctum…</div>
 <aside class="caption"><small id="state">THE HOLLOW KING</small><strong id="pose">A heavy presence.</strong><p>Broader shoulders. A darker stare.<br>Slow, weighty strides and a planted attack windup.</p></aside>
 <nav aria-label="Boss preview controls"><button id="kind">Show guardian</button><button id="stride" aria-pressed="false">Heavy strides</button><button id="charge">Attack windup</button><button id="rage" aria-pressed="false">Enrage</button><button id="turn">Turn boss ↻</button><button id="orbit">Orbit view ↻</button><button id="pause" aria-pressed="false">Pause</button><a href="./">Back to adventure</a></nav>
-<script src="./babylon.js?v=efee0e5a"></script><script type="module">
-import {enableRightDragOrbit} from './camera-controls.js?v=efee0e5a';
-import {createRenderer} from './renderer.js?v=efee0e5a';
-import {createSpriteLibrary} from './sprites.js?v=efee0e5a';
-import {createWorld} from './world.js?v=efee0e5a';
-import {createWorldLighting,setWorldLighting} from './lighting.js?v=efee0e5a';
-import {applyCelShading} from './cel.js?v=efee0e5a';
-import {enemyProfile} from './enemy-profile.js?v=efee0e5a';
-import {createBossPresence} from './boss-presence.js?v=efee0e5a';
+<script src="./babylon.js?v=ec1ec11a"></script><script type="module">
+import {enableRightDragOrbit} from './camera-controls.js?v=ec1ec11a';
+import {createRenderer} from './renderer.js?v=ec1ec11a';
+import {createSpriteLibrary} from './sprites.js?v=ec1ec11a';
+import {createWorld} from './world.js?v=ec1ec11a';
+import {createWorldLighting,setWorldLighting} from './lighting.js?v=ec1ec11a';
+import {applyCelShading} from './cel.js?v=ec1ec11a';
+import {enemyProfile} from './enemy-profile.js?v=ec1ec11a';
+import {createBossPresence} from './boss-presence.js?v=ec1ec11a';
 const B=BABYLON,V=B.Vector3,$=s=>document.querySelector(s),canvas=$('#stage');
 let engine,scene,camera,world,sprites,hero,enemy,shadow,sun,time=0,paused=false,moving=false,enraged=false,windup=0,direction=0,kind='boss';
 const facing=new V(0,0,-1),heroFacing=new V(0,0,-1);
