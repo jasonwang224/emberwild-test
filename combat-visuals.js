@@ -1,4 +1,4 @@
-import {applyCelShading} from './cel.js?v=54d49b7f';
+import {applyCelShading} from './cel.js?v=9517e800';
 
 // Weapon motion lives beside the billboard, never inside it. The collision root
 // stays grounded while hands, weapon tips and release effects move in real 3D.

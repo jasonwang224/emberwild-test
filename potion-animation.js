@@ -1,4 +1,4 @@
-import {applyCelShading} from './cel.js?v=54d49b7f';
+import {applyCelShading} from './cel.js?v=9517e800';
 
 // Driven by the game clock: pausing never finishes a drink behind a menu.
 export const POTION_TIMING=Object.freeze({sip:.55,duration:1.40});

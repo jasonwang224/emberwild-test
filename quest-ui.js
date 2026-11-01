@@ -1,5 +1,5 @@
-import {QUESTS,questStatus,questObjectives,questsForGiver,trackedQuest} from './quests.js?v=54d49b7f';
-import {questInfo} from './core.js?v=54d49b7f';
+import {QUESTS,questStatus,questObjectives,questsForGiver,trackedQuest} from './quests.js?v=9517e800';
+import {questInfo} from './core.js?v=9517e800';
 
 const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const stateNames={available:'Available',active:'In progress',ready:'Ready to turn in',completed:'Completed',locked:'Locked'};

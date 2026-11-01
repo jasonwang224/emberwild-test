@@ -1,23 +1,24 @@
 /* Emberwild — original procedural scenery. No external assets. */
-import {createMeadowTexture} from './meadow-texture.js?v=54d49b7f';
-import {buildMeadowDetail} from './meadow-detail.js?v=54d49b7f';
-import {installCanopyWind,CANOPY_WIND_PADDING} from './canopy-wind.js?v=54d49b7f';
-import {installEnvironmentPaint,applyEnvironmentPaintUV} from './environment-paint.js?v=54d49b7f';
-import {createCampMaterials,applyCampPaintUV} from './camp-paint.js?v=54d49b7f';
-import {createCanopyPaint,canopyPaintUV} from './canopy-paint.js?v=54d49b7f';
-import {treeAppearance,buildTreeCanopy,buildTreeBranches,buildTreeAccents} from './tree-canopy.js?v=54d49b7f';
-import {createTreeStyleController} from './tree-style-controller.js?v=54d49b7f';
-import {TOWN_PLAN,buildTownExpansion} from './town-expansion.js?v=54d49b7f';
-import {EXPANSION_BOUNDS,EXPANSION_ROUTES,expansionReservedAreas,buildWorldExpansion} from './world-expansion.js?v=54d49b7f';
-import {buildCampTerrain} from './camp-terrain.js?v=54d49b7f';
-import {dressCamps} from './camp-dressing.js?v=54d49b7f';
-import {isTownSafe,findClearPosition} from './world-navigation.js?v=54d49b7f';
-import {enemyProfile} from './enemy-profile.js?v=54d49b7f';
-import {createCircleQuery,createSegmentQuery} from './world-spatial-query.js?v=54d49b7f';
-import {canopyVertexLayout,deformCanopyTemplate,cachedCanopyPaintUV} from './canopy-vertex-cache.js?v=54d49b7f';
-import {applyBatchVertexData,uploadBatchGeometry} from './world-batch-geometry.js?v=54d49b7f';
-import {installWaterSurface} from './water-surface.js?v=54d49b7f';
-export {treeAppearance} from './tree-canopy.js?v=54d49b7f';
+import {createMeadowTexture} from './meadow-texture.js?v=9517e800';
+import {buildMeadowDetail} from './meadow-detail.js?v=9517e800';
+import {installCanopyWind,CANOPY_WIND_PADDING} from './canopy-wind.js?v=9517e800';
+import {installEnvironmentPaint,applyEnvironmentPaintUV} from './environment-paint.js?v=9517e800';
+import {createCampMaterials,applyCampPaintUV} from './camp-paint.js?v=9517e800';
+import {createCanopyPaint,canopyPaintUV} from './canopy-paint.js?v=9517e800';
+import {treeAppearance,buildTreeCanopy,buildTreeBranches,buildTreeAccents} from './tree-canopy.js?v=9517e800';
+import {createTreeStyleController} from './tree-style-controller.js?v=9517e800';
+import {TOWN_PLAN,buildTownExpansion} from './town-expansion.js?v=9517e800';
+import {EXPANSION_BOUNDS,EXPANSION_ROUTES,expansionReservedAreas,buildWorldExpansion} from './world-expansion.js?v=9517e800';
+import {buildCampTerrain} from './camp-terrain.js?v=9517e800';
+import {dressCamps} from './camp-dressing.js?v=9517e800';
+import {isTownSafe,findClearPosition} from './world-navigation.js?v=9517e800';
+import {enemyProfile} from './enemy-profile.js?v=9517e800';
+import {createCircleQuery,createSegmentQuery} from './world-spatial-query.js?v=9517e800';
+import {canopyVertexLayout,deformCanopyTemplate,cachedCanopyPaintUV} from './canopy-vertex-cache.js?v=9517e800';
+import {applyBatchVertexData,uploadBatchGeometry} from './world-batch-geometry.js?v=9517e800';
+import {installWaterSurface} from './water-surface.js?v=9517e800';
+import {POND_DOCK,dockSurfaceHeight} from './pond-dock.js?v=9517e800';
+export {treeAppearance} from './tree-canopy.js?v=9517e800';
 
 export function createWorld(B, scene, options = {}) {
   const dungeon = options.zone === 'dungeon';
@@ -637,7 +638,8 @@ export function createWorld(B, scene, options = {}) {
     for(let j=0;j<26;j++){const a=j*.24166;const x=Math.sin(a)*7.9,z=1.2+Math.cos(a)*7.9;if(!onPath(x,z,.5)&&!obstacles.some(o=>Math.hypot(x-o.x,z-o.z)<o.r+.6))flower(x,z,j%3?M.cream:M.lavender,1.45);}
     town=buildTownExpansion({B,scene,root,M,box,cylinder,ball,beam,torus,node,finish,house,roundHouse,lantern,barrel,shrub,flower,grassTuft,obstacle,bench,crate,fence});
     // Fishing pond, reeds and a timber dock connected to the west lane.
-    const pond=cylinder('pond-water',-33,.032,-5,7.65,.045,M.pond,48,root,false);pond.scaling.z=.91;obstacle(-33,-5,6.7);
+    const pond=cylinder('pond-water',-33,.032,-5,7.65,.045,M.pond,48,root,false);pond.scaling.z=.91;
+    obstacles.push({x:-33,z:-5,r:6.7,passage:POND_DOCK});
     for(let j=0;j<28;j++){const a=j*Math.PI*2/28;const x=-33+Math.sin(a)*8.1,z=-5+Math.cos(a)*7.4;rock(x,z,range(.35,.7),M.stoneLight,false);}
     // Raised grassy shelves expose layered rock faces above the waterline.
     for(let j=0;j<26;j++){
@@ -651,12 +653,27 @@ export function createWorld(B, scene, options = {}) {
     // The water shader supplies moving glints; static white blocks made the
     // surface read as a flat painted disk when the camera rotated.
     for(let j=0;j<12;j++){const x=range(-37,-30),z=range(-9,0);cylinder('lily-pad',x,.055,z,.25,.035,j%3?M.leaf:M.leafLight,8);if(j%3===0){ball('water-lily',x,.16,z,.13,M.pink);cylinder('lily-pad-small',x+.28,.057,z-.17,.16,.025,M.leafLight,7);cylinder('lily-pad-small',x-.23,.056,z+.22,.13,.025,M.leaf,7);}}
-    for(let j=0;j<9;j++){const x=-27.6-j*.44;box('dock-plank',x,.20,-6, .40,.2,2.7,M.woodLight);}
-    for(const x of [-27.5,-30.9])for(const z of [-7.3,-4.7])cylinder('dock-post',x,.22,z,.12,1.1,M.wood,6);
-    const fish=interact('fishing','fishing','Moonmirror Pond',-26,-7);barrel(.45,0,.7,fish,false);
+    const d=POND_DOCK,deckParts=[],rampParts=[];
+    // The east end overlaps dry land; the sloping approach meets the west lane.
+    for(let j=0;j<10;j++)deckParts.push(box('dock-plank',d.minX+.22+j*.44,.20,d.z,.42,.20,2.7,M.woodLight,root,false));
+    const slope=Math.atan2(d.height,d.maxX-d.deckEndX),rampStep=(d.maxX-d.deckEndX)/4;
+    for(let j=0;j<4;j++){
+      const x=d.deckEndX+(j+.5)*rampStep;
+      const plank=box('dock-ramp-plank',x,dockSurfaceHeight(x,d.z)-.05/Math.cos(slope),d.z,(rampStep-.01)/Math.cos(slope),.10,2.7,M.woodLight,root,false);
+      plank.rotation.z=-slope;rampParts.push(plank);
+    }
+    // Keep each walk surface pickable instead of merging it into scenery.
+    for(const [name,parts] of [['dock-deck',deckParts],['dock-ramp',rampParts]]){
+      parts.forEach(mesh=>mesh.computeWorldMatrix(true));
+      const surface=B.Mesh.MergeMeshes(parts,true,true);surface.name=name;surface.parent=root;
+      surface.isPickable=true;surface.receiveShadows=true;surface.metadata={ground:true,dock:true};
+    }
+    for(const x of [d.minX+.12,d.deckEndX-.12])for(const z of [d.minZ-.05,d.maxZ+.05])cylinder('dock-post',x,.22,z,.12,1.1,M.wood,6);
+    const fish=interact('fishing','fishing','Moonmirror Pond',-27.4,-5.15);fish.position.y=d.height;barrel(.45,0,0,fish,false);
+    obstacle(-26.95,-5.15,.28);
     beam('fishing-rod',[-.2,.25,0],[-1.25,2.05,.25],.045,M.woodLight,fish,false);
-    beam('fishing-line',[-1.25,2.05,.25],[-3,.3,1],.008,M.cream,fish,false);
-    const bob=ball('fishing-bobber',-3,.3,1,.10,M.red,fish,false);animated.push({type:'bob',mesh:bob,baseY:.3,phase:0});
+    beam('fishing-line',[-1.25,2.05,.25],[-3,-.18,.25],.008,M.cream,fish,false);
+    const bob=ball('fishing-bobber',-3,-.18,.25,.10,M.red,fish,false);animated.push({type:'bob',mesh:bob,baseY:-.18,phase:0});
     for(let j=0;j<12;j++){
       const a=range(0,6.28),x=-33+Math.sin(a)*7.6,z=-5+Math.cos(a)*7.2;
       for(let k=0;k<3;k++){
@@ -862,6 +879,7 @@ export function createWorld(B, scene, options = {}) {
     ground, obstacles, interactables, spawnPoints, shadowCasters, spawn, bounds, treePositions,mapRoutes,
     camps:expansion?.camps||[],landmarks:[...(town?.landmarks||[]),...(expansion?.landmarks||[])],
     isSafe:(x,z)=>!dungeon&&isTownSafe(x,z),
+    surfaceHeight:(x,z)=>dungeon||options.treeStudy?0:dockSurfaceHeight(x,z),
     get treeStyle(){return treeStyles.styleId;},
     setTreeStyle:(id,options)=>treeStyles.setStyle(id,options),
     update(dt,t) {

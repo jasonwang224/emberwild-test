@@ -1,4 +1,4 @@
-import {assertTreeBuildActive} from './runtime.js?v=54d49b7f';
+import {assertTreeBuildActive} from './runtime.js?v=9517e800';
 /* The actual original generated tree artwork, with alpha and pixel sampling. */
 const CELLS=[[21,36,478,456],[533,51,471,441],[1044,55,467,440]];
 export async function build(B,scene,options={}){

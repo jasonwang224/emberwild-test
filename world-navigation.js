@@ -2,6 +2,8 @@
 export const TOWN_SAFE_BOUNDS=Object.freeze({minX:-27,maxX:27,minZ:-11,maxZ:25});
 const EPS=1e-6;
 const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+const inside=(p,box)=>box&&p.x>=box.minX-EPS*.1&&p.x<=box.maxX+EPS*.1&&p.z>=box.minZ-EPS*.1&&p.z<=box.maxZ+EPS*.1;
+const closestIn=(p,box)=>({x:clamp(p.x,box.minX,box.maxX),z:clamp(p.z,box.minZ,box.maxZ)});
 
 export function isTownSafe(x,z,pad=0){
   const b=TOWN_SAFE_BOUNDS;
@@ -14,13 +16,24 @@ function geometry(obstacles,bounds,radius){
     !['minX','maxX','minZ','maxZ'].every(key=>Number.isFinite(bounds[key])))throw new TypeError('Navigation requires finite bounds and a nonnegative radius.');
   const box={minX:bounds.minX+radius,maxX:bounds.maxX-radius,minZ:bounds.minZ+radius,maxZ:bounds.maxZ-radius};
   if(box.minX>box.maxX||box.minZ>box.maxZ)throw new RangeError('Navigation bounds cannot contain this actor.');
-  for(const o of obstacles)if(!o||!Number.isFinite(o.x)||!Number.isFinite(o.z)||!Number.isFinite(o.r)||o.r<0)throw new TypeError('Navigation obstacles require finite coordinates and nonnegative radii.');
+  const passages=new Map();
+  for(const o of obstacles){
+    if(!o||!Number.isFinite(o.x)||!Number.isFinite(o.z)||!Number.isFinite(o.r)||o.r<0)throw new TypeError('Navigation obstacles require finite coordinates and nonnegative radii.');
+    if(o.passage!==undefined){
+      const p=o.passage;
+      if(!p||!['minX','maxX','minZ','maxZ'].every(key=>Number.isFinite(p[key]))||p.minX>=p.maxX||p.minZ>=p.maxZ)throw new TypeError('Navigation passages require finite, ordered rectangle bounds.');
+      // A passage exempts only its own obstacle. The actor's entire footprint
+      // must fit on the surface; larger actors still collide with the water.
+      const inset={minX:p.minX+radius,maxX:p.maxX-radius,minZ:p.minZ+radius,maxZ:p.maxZ-radius};
+      if(inset.minX<=inset.maxX&&inset.minZ<=inset.maxZ)passages.set(o,inset);
+    }
+  }
   const circles=obstacles;
   const bounded=p=>({x:clamp(p.x,box.minX,box.maxX),z:clamp(p.z,box.minZ,box.maxZ)});
   const clear=p=>Number.isFinite(p.x)&&Number.isFinite(p.z)&&
     p.x>=box.minX-EPS&&p.x<=box.maxX+EPS&&p.z>=box.minZ-EPS&&p.z<=box.maxZ+EPS&&
-    circles.every(o=>Math.hypot(p.x-o.x,p.z-o.z)>=o.r+radius-EPS*.1);
-  return {box,circles,bounded,clear};
+    circles.every(o=>Math.hypot(p.x-o.x,p.z-o.z)>=o.r+radius-EPS*.1||inside(p,passages.get(o)));
+  return {box,circles,passages,bounded,clear};
 }
 
 function finitePoint(p){
@@ -31,7 +44,7 @@ function finitePoint(p){
 // Testing those candidates avoids a coarse grid moving an old save needlessly.
 export function findClearPosition(position,obstacles,bounds,radius=.45,fallback={x:0,z:-5}){
   finitePoint(position);
-  const {box,circles,bounded,clear}=geometry(obstacles,bounds,radius);
+  const {box,circles,passages,bounded,clear}=geometry(obstacles,bounds,radius);
   const initial=bounded(position);
   if(clear(initial))return initial;
   let best=null,bestDistance=Infinity;
@@ -42,6 +55,23 @@ export function findClearPosition(position,obstacles,bounds,radius=.45,fallback=
   };
   if(fallback&&Number.isFinite(fallback.x)&&Number.isFinite(fallback.z))consider(fallback.x,fallback.z);
   for(const x of [box.minX,box.maxX])for(const z of [box.minZ,box.maxZ])consider(x,z);
+  for(const passage of passages.values()){
+    const p=closestIn(position,passage);consider(p.x,p.z);
+    for(const x of [passage.minX,passage.maxX])for(const z of [passage.minZ,passage.maxZ])consider(x,z);
+    // A barrel or another obstacle can cover the closest deck point. Include
+    // its intersections with deck edges before falling back to a distant bank.
+    for(const o of circles){
+      const r=o.r+radius+EPS;
+      for(const x of [passage.minX,passage.maxX]){
+        const squared=r*r-(x-o.x)**2;
+        if(squared>=0)for(const z of [o.z-Math.sqrt(squared),o.z+Math.sqrt(squared)])if(inside({x,z},passage))consider(x,z);
+      }
+      for(const z of [passage.minZ,passage.maxZ]){
+        const squared=r*r-(z-o.z)**2;
+        if(squared>=0)for(const x of [o.x-Math.sqrt(squared),o.x+Math.sqrt(squared)])if(inside({x,z},passage))consider(x,z);
+      }
+    }
+  }
   for(let i=0;i<circles.length;i++){
     const a=circles[i],ar=a.r+radius+EPS,dx=position.x-a.x,dz=position.z-a.z,d=Math.hypot(dx,dz);
     if(d>EPS)consider(a.x+dx/d*ar,a.z+dz/d*ar);
@@ -69,7 +99,7 @@ export function findClearPosition(position,obstacles,bounds,radius=.45,fallback=
 
 export function resolveMovement(position,delta,obstacles,bounds,radius=.45){
   finitePoint(position);finitePoint(delta);
-  const {circles,bounded,clear}=geometry(obstacles,bounds,radius);
+  const {circles,passages,bounded,clear}=geometry(obstacles,bounds,radius);
   let current=bounded(position);
   // Old saves are normally repaired before movement. This also makes a newly
   // inserted obstacle recoverable rather than leaving an actor inside a wall.
@@ -83,10 +113,16 @@ export function resolveMovement(position,delta,obstacles,bounds,radius=.45){
     for(let pass=0;pass<12;pass++){
       if(clear(p))return p;
       for(const o of circles){
+        const passage=passages.get(o);
+        if(inside(p,passage))continue;
         let ox=p.x-o.x,oz=p.z-o.z,len=Math.hypot(ox,oz),min=o.r+radius;
         if(len>=min)continue;
         if(len<EPS){ox=previous.x-o.x;oz=previous.z-o.z;len=Math.hypot(ox,oz);if(len<EPS){ox=1;oz=0;len=1;}}
-        p=bounded({x:o.x+ox/len*(min+EPS),z:o.z+oz/len*(min+EPS)});
+        const bank=bounded({x:o.x+ox/len*(min+EPS),z:o.z+oz/len*(min+EPS)});
+        // From a pier, stop/slide at its edge instead of snapping to the bank.
+        // An approaching actor must actually step onto it, never jump the
+        // water between a nearby bank and a side edge via collision correction.
+        p=inside(previous,passage)?bounded(closestIn(p,passage)):bank;
       }
     }
     return clear(p)?p:null;

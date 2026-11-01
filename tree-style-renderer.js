@@ -1,16 +1,16 @@
-import {normalizeTreeStyle} from './tree-style-options.js?v=54d49b7f';
-export {TREE_STYLE_OPTIONS,normalizeTreeStyle} from './tree-style-options.js?v=54d49b7f';
+import {normalizeTreeStyle} from './tree-style-options.js?v=9517e800';
+export {TREE_STYLE_OPTIONS,normalizeTreeStyle} from './tree-style-options.js?v=9517e800';
 
 const loaders={
-  'original-sprites':()=>import('./tree-styles/original-sprites.js?v=54d49b7f'),
-  prototype:()=>import('./tree-styles/prototype.js?v=54d49b7f'),
-  c8f1bee:()=>import('./tree-styles/c8f1bee.js?v=54d49b7f'),
-  e8edc64:()=>import('./tree-styles/e8edc64.js?v=54d49b7f'),
-  '44a9bb3':()=>import('./tree-styles/44a9bb3.js?v=54d49b7f'),
-  '9f3c194':()=>import('./tree-styles/9f3c194.js?v=54d49b7f'),
-  '17cd003':()=>import('./tree-styles/17cd003.js?v=54d49b7f'),
-  '23c89c4':()=>import('./tree-styles/23c89c4.js?v=54d49b7f'),
-  '9de1d1e':()=>import('./tree-styles/9de1d1e.js?v=54d49b7f')
+  'original-sprites':()=>import('./tree-styles/original-sprites.js?v=9517e800'),
+  prototype:()=>import('./tree-styles/prototype.js?v=9517e800'),
+  c8f1bee:()=>import('./tree-styles/c8f1bee.js?v=9517e800'),
+  e8edc64:()=>import('./tree-styles/e8edc64.js?v=9517e800'),
+  '44a9bb3':()=>import('./tree-styles/44a9bb3.js?v=9517e800'),
+  '9f3c194':()=>import('./tree-styles/9f3c194.js?v=9517e800'),
+  '17cd003':()=>import('./tree-styles/17cd003.js?v=9517e800'),
+  '23c89c4':()=>import('./tree-styles/23c89c4.js?v=9517e800'),
+  '9de1d1e':()=>import('./tree-styles/9de1d1e.js?v=9517e800')
 };
 
 export function normalizeTreePlacements(trees=[]){

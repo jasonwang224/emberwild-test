@@ -1,6 +1,6 @@
 // Tree-only reconstruction of saved revision 44a9bb3. Original procedural geometry and surface paint.
-import {applyCelShading} from './cel-c8f1bee.js?v=54d49b7f';
-import {finishHistoricalBatch,scopeHistoricalStyle,assertTreeBuildActive} from './runtime.js?v=54d49b7f';
+import {applyCelShading} from './cel-c8f1bee.js?v=9517e800';
+import {finishHistoricalBatch,scopeHistoricalStyle,assertTreeBuildActive} from './runtime.js?v=9517e800';
 
 export async function build(B,scene,options={}) {
   const root=new B.TransformNode('tree-style-44a9bb3',scene);root.setEnabled(false);if(options.parent)root.parent=options.parent;

@@ -1,4 +1,4 @@
-import {applyCampPaintUV} from './camp-paint.js?v=54d49b7f';
+import {applyCampPaintUV} from './camp-paint.js?v=9517e800';
 
 const PROFILES=[
   {name:'Fern',kind:'inn',height:2.12,thanks:'Thank you! I can finally go home!'},

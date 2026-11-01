@@ -1,35 +1,35 @@
-import {enableRightDragOrbit} from './camera-controls.js?v=54d49b7f';
-import {createImpactFeedback} from './impact-effects.js?v=54d49b7f';
-import {createDashTrail} from './dash-trail.js?v=54d49b7f';
-import {createLootBeacon} from './loot-beacon.js?v=54d49b7f';
-import {createLootAppearance} from './loot-appearance.js?v=54d49b7f';
-import {createBossLane} from './boss-lane.js?v=54d49b7f';
-import {chooseTarget,enemyDistance,CREATURE_NAMES} from './targeting.js?v=54d49b7f';
-import {enemyProfile} from './enemy-profile.js?v=54d49b7f';
-import {createBossPresence} from './boss-presence.js?v=54d49b7f';
-import {createWorldLighting,setWorldLighting} from './lighting.js?v=54d49b7f';
-import {createWorld} from './world.js?v=54d49b7f';
-import {normalizeTreeStyle} from './tree-style-options.js?v=54d49b7f';
-import {treeStyleMenuHTML,treeStyleName} from './tree-style-ui.js?v=54d49b7f';
-import {findClearPosition,resolveMovement} from './world-navigation.js?v=54d49b7f';
-import {createAudio} from './audio.js?v=54d49b7f';
-import {CHIP_TRACKS,THEME_PLAYLISTS} from './chiptune-score.js?v=54d49b7f';
-import {createSpriteLibrary} from './sprites.js?v=54d49b7f';
-import {applyCelShading} from './cel.js?v=54d49b7f';
-import {createVillagers} from './villagers.js?v=54d49b7f';
-import {createCampRescues} from './camp-rescues.js?v=54d49b7f';
-import {createTownGuards,GUARD_REACH} from './town-guards.js?v=54d49b7f';
-import {createQuestMarkers} from './quest-markers.js?v=54d49b7f';
-import {QUESTS,questStatus,questObjectives,acceptQuest,claimQuest,recordQuestEvent,setTrackedQuest} from './quests.js?v=54d49b7f';
-import {mainQuestView,sideQuestView,questCardHTML,questObjectiveHTML,questRewardText,questLogHTML,questDialogueHTML,questGiverHTML,trackedQuestInfo,questGiverState as getQuestGiverState} from './quest-ui.js?v=54d49b7f';
-import {createRenderer} from './renderer.js?v=54d49b7f';
-import {bindGameLifecycle} from './game-lifecycle.js?v=54d49b7f';
-import {createCombatVisuals} from './combat-visuals.js?v=54d49b7f';
-import {createPotionAnimation} from './potion-animation.js?v=54d49b7f';
-import {createHealingEffects} from './healing-effects.js?v=54d49b7f';
-import {createTitleScene} from './title-scene.js?v=54d49b7f';
-import {createAbilityEffects,ABILITY_CUES} from './ability-effects.js?v=54d49b7f';
-import {CLASSES,SAVE_KEY,newGame,stats,addXP,xpNeeded,makeLoot,equip,parseSave,questInfo,RARITIES} from './core.js?v=54d49b7f';
+import {enableRightDragOrbit} from './camera-controls.js?v=9517e800';
+import {createImpactFeedback} from './impact-effects.js?v=9517e800';
+import {createDashTrail} from './dash-trail.js?v=9517e800';
+import {createLootBeacon} from './loot-beacon.js?v=9517e800';
+import {createLootAppearance} from './loot-appearance.js?v=9517e800';
+import {createBossLane} from './boss-lane.js?v=9517e800';
+import {chooseTarget,enemyDistance,CREATURE_NAMES} from './targeting.js?v=9517e800';
+import {enemyProfile} from './enemy-profile.js?v=9517e800';
+import {createBossPresence} from './boss-presence.js?v=9517e800';
+import {createWorldLighting,setWorldLighting} from './lighting.js?v=9517e800';
+import {createWorld} from './world.js?v=9517e800';
+import {normalizeTreeStyle} from './tree-style-options.js?v=9517e800';
+import {treeStyleMenuHTML,treeStyleName} from './tree-style-ui.js?v=9517e800';
+import {findClearPosition,resolveMovement} from './world-navigation.js?v=9517e800';
+import {createAudio} from './audio.js?v=9517e800';
+import {CHIP_TRACKS,THEME_PLAYLISTS} from './chiptune-score.js?v=9517e800';
+import {createSpriteLibrary} from './sprites.js?v=9517e800';
+import {applyCelShading} from './cel.js?v=9517e800';
+import {createVillagers} from './villagers.js?v=9517e800';
+import {createCampRescues} from './camp-rescues.js?v=9517e800';
+import {createTownGuards,GUARD_REACH} from './town-guards.js?v=9517e800';
+import {createQuestMarkers} from './quest-markers.js?v=9517e800';
+import {QUESTS,questStatus,questObjectives,acceptQuest,claimQuest,recordQuestEvent,setTrackedQuest} from './quests.js?v=9517e800';
+import {mainQuestView,sideQuestView,questCardHTML,questObjectiveHTML,questRewardText,questLogHTML,questDialogueHTML,questGiverHTML,trackedQuestInfo,questGiverState as getQuestGiverState} from './quest-ui.js?v=9517e800';
+import {createRenderer} from './renderer.js?v=9517e800';
+import {bindGameLifecycle} from './game-lifecycle.js?v=9517e800';
+import {createCombatVisuals} from './combat-visuals.js?v=9517e800';
+import {createPotionAnimation} from './potion-animation.js?v=9517e800';
+import {createHealingEffects} from './healing-effects.js?v=9517e800';
+import {createTitleScene} from './title-scene.js?v=9517e800';
+import {createAbilityEffects,ABILITY_CUES} from './ability-effects.js?v=9517e800';
+import {CLASSES,SAVE_KEY,newGame,stats,addXP,xpNeeded,makeLoot,equip,parseSave,questInfo,RARITIES} from './core.js?v=9517e800';
 
 const $=id=>document.getElementById(id),B=window.BABYLON,V=B?.Vector3;
 const canvas=$('game'),sound=createAudio();
@@ -82,7 +82,7 @@ function createHero(cls){
  root.getChildMeshes().forEach(m=>shadow?.addShadowCaster(m));return attachHeroEffects({root,body,feet,arms:[armL,armR],weapon,cape},cls);
 }
 // Contact ink sits above painted paving; the raised arena needs its own height.
-function contactShadowHeight(root){return zone==='dungeon'&&Math.hypot(root.position.x,root.position.z-18)<9.9?.16:.075;}
+function contactShadowHeight(root){return world?.surfaceHeight?.(root.position.x,root.position.z)>0?.025:zone==='dungeon'&&Math.hypot(root.position.x,root.position.z-18)<9.9?.16:.075;}
 function actorShadow(root,radius){const mesh=B.MeshBuilder.CreateDisc('grounded creature shadow',{radius,tessellation:20,sideOrientation:B.Mesh.DOUBLESIDE},scene);mesh.parent=root;mesh.rotation.x=Math.PI/2;mesh.position.y=contactShadowHeight(root);mesh.material=mat('#292431',1,.54);mesh.material.disableLighting=true;mesh.material.specularColor=B.Color3.Black();mesh.isPickable=false;return mesh;}
 function landingDust(position,size=1){if(effects.length>120)return;for(let i=0;i<3;i++){const a=i/3*Math.PI*2+Math.random()*.4,m=B.MeshBuilder.CreateIcoSphere('landing puff',{radius:.10*size,subdivisions:1},scene);m.position.copyFrom(position).addInPlace(new V(Math.sin(a)*.28*size,.10,Math.cos(a)*.28*size));m.material=mat('#d3c79e',0,.35);m.isPickable=false;effects.push({mesh:m,life:.24,max:.24,kind:'dust',velocity:new V(Math.sin(a)*.6,.2,Math.cos(a)*.6)});}}
 function updateActorMotion(actor,mesh,dt,moving,pace=1){const motion=sprites.animate(mesh,dt,{moving,pace,windup:actor.windup||0,hurt:actor.hurt||0});if(!motion)return;actor.halo.scaling.setAll(1-motion.hop*.55);actor.halo.visibility=1-motion.hop*.7;if(motion.landed&&moving&&dist(actor.root.position,hero.root.position)<18)landingDust(actor.root.position,actor.kind==='boss'?1.7:.75);}
@@ -204,7 +204,7 @@ function start(continuing=false){clearTitleBackdrop();resetCamera();sound.setEna
  // interactables, shrine state and encounters, just as a zone transition does.
  const reuseIntroWorld=introWorldReusable&&zone===save.zone&&save.zone==='overworld';introWorldReusable=false;
  if(reuseIntroWorld){resetDynamics();setupZoneActors();applyCelShading(B,scene);activateZone(save.zone,true);}else buildZone(save.zone,true);
- if(continuing){const restored=findClearPosition({x:save.x,z:save.z},world.obstacles,world.bounds,.48,world.spawn);hero.root.position.x=restored.x;hero.root.position.z=restored.z;}else hero.root.position.set(world.spawn.x,0,world.spawn.z);camTarget.copyFrom(hero.root.position);fox.root.position.copyFrom(hero.root.position).addInPlace(new V(1,0,-1));
+ if(continuing){const restored=findClearPosition({x:save.x,z:save.z},world.obstacles,world.bounds,.48,world.spawn);hero.root.position.x=restored.x;hero.root.position.z=restored.z;}else hero.root.position.set(world.spawn.x,0,world.spawn.z);hero.root.position.y=world.surfaceHeight?.(hero.root.position.x,hero.root.position.z)||0;camTarget.copyFrom(hero.root.position);fox.root.position.copyFrom(hero.root.position).addInPlace(new V(1,0,-1));
  const st=stats(save);save.hp=clamp(save.hp,1,st.maxHp);save.mana=clamp(save.mana,0,st.maxMana);attackCD=skillCD=ultCD=dashCD=dashTime=invincible=shieldTime=petCD=attackAnim=combo=comboTime=shake=inCombat=saveTime=hudTime=0;lastFacing.set(0,0,1);keys.clear();touch.x=touch.z=0;fishing=null;lastZone='';mode='play';paused=false;$('intro').hidden=true;$('hud').hidden=false;$('modal').hidden=true;sound.update(zone==='overworld'&&world.isSafe(hero.root.position.x,hero.root.position.z)?'town':zone,false);sound.setEnabled(save.settings.sound);applyQuality();canvas.focus();updateHUD();announce(continuing?'Welcome home, wanderer.':'Your story starts here.','EMBERWILD');if(!continuing)toast('Meet Elder Rowan','Follow the ! marker by the fountain. Press E to talk.','!');persist();}
 function persist(){if(mode==='intro')return;save.x=hero.root.position.x;save.z=hero.root.position.z;save.zone=zone;try{localStorage.setItem(SAVE_KEY,JSON.stringify(save));$('save-status').textContent='Adventure saved · on this device';saved=parseSave(JSON.stringify(save));}catch{$('save-status').textContent='Saving unavailable in this browser';}}
 
@@ -374,7 +374,7 @@ function updateEnemies(dt){
   else{ring(w.pos,w.r,'#e6a080',.4);burst(w.pos.add(new V(0,.5,0)),'#e6a080',8);if(dist(hero.root.position,w.pos)<w.r)hurt(w.damage);}
  }w.mesh.dispose();telegraphs.splice(i,1);}}
 }
-function moveEntity(root,delta,radius=.45){const p=resolveMovement(root.position,delta,world.obstacles,world.bounds,radius);root.position.x=p.x;root.position.z=p.z;}
+function moveEntity(root,delta,radius=.45){const p=resolveMovement(root.position,delta,world.obstacles,world.bounds,radius);root.position.x=p.x;root.position.z=p.z;root.position.y=world.surfaceHeight?.(p.x,p.z)||0;}
 
 function openModal(html,closable=true){paused=true;keys.clear();touch.x=touch.z=0;clickTarget=null;$('modal-content').innerHTML=(closable?'<button class="modal-close" aria-label="Close panel" data-action="close">×</button>':'')+html;$('modal').hidden=false;$('modal-content').querySelector('button')?.focus();}
 function closeModal(){if(mode==='dead')return;paused=false;fishing=null;$('modal').hidden=true;canvas.focus();persist();}
@@ -645,11 +645,13 @@ function updateEffects(dt){for(let i=effects.length-1;i>=0;i--){const e=effects[
 function getRegion(){const p=hero.root.position;if(zone==='dungeon')return ['The Hollow Sanctum','ASCENSION '+(save.ascension+1)];if(world.isSafe(p.x,p.z))return ['Hearthglen','SANCTUARY · THE EMBER VALLEY'];const camp=world.camps.find(c=>dist(c,p)<c.radius+3);if(camp){const guards=enemies.filter(e=>e.campId===camp.id).length;return [camp.name,guards?`ENEMY CAMP · ${guards} GUARDS`:campNeedsRescue(camp.id)?'CAMP CLEARED · FREE THE CAPTIVE':'CAMP CLEARED · SEARCH THE CACHE'];}const landmark=world.landmarks.find(l=>dist(l,p)<(l.radius||6)+2);if(landmark)return [landmark.name,landmark.description||'A LANDMARK OF THE VALLEY'];if(p.z>52)return ['The Highmeadow','ANCIENT STONES UNDER OPEN SKIES'];if(p.z<-36)return ['Sunwheel Downs','WIND THROUGH THE GOLDEN GRASS'];if(p.z>34)return ['The Forgotten Gate','RUINS OF THE FIRST DAWN'];if(p.x<-17)return ['Moonmirror Grove','WHERE THE WATER KEEPS ITS SECRETS'];if(p.x>18&&p.z<0)return ['Sunpetal Fields','WILD MAGIC STIRS'];if(p.x>18)return ['Whisperwood','FOLLOW THE LIGHT BETWEEN THE LEAVES'];return ['The Wandering Meadow','BEYOND THE VILLAGE WALLS'];}
 function updateInteraction(){nearby=null;let n=3.4;for(const o of world.interactables){if(!o.mesh.isEnabled())continue;const d=dist(hero.root.position,o);if(d<n){n=d;nearby=o;}}const el=$('interact-prompt');if(nearby){el.hidden=false;el.innerHTML=`<kbd>E</kbd> ${esc(nearby.type==='herb'?'Gather '+nearby.name:nearby.type==='chest'?'Open treasure':nearby.type==='captive'?(campGuardCount(nearby.campId)?'Help ':'Free ')+nearby.name.split(' · ')[0]:nearby.name||nearby.type)}`;}else el.hidden=true;$('interact-button').classList.toggle('available',!!nearby);}
 function updateCompanion(dt){
- const desired=hero.root.position.add(new V(1.3,0,-1.2)),delta=desired.subtract(fox.root.position);delta.y=0;
+ const onDock=(world.surfaceHeight?.(hero.root.position.x,hero.root.position.z)||world.surfaceHeight?.(fox.root.position.x,fox.root.position.z))>0;
+ const desired=hero.root.position.add(onDock?new V(1,0,0):new V(1.3,0,-1.2)),delta=desired.subtract(fox.root.position);delta.y=0;
  const moving=delta.length()>1;
- if(moving){fox.root.position.addInPlace(delta.scale(Math.min(1,dt*3)));if(fox.sprite)fox.facing.copyFrom(delta).normalize();else fox.root.rotation.y=Math.atan2(delta.x,delta.z);}
- if(fox.sprite){fox.root.position.y=0;updateActorMotion(fox,fox.sprite,dt,moving,Math.min(1.3,delta.length()/2));}
- else{fox.root.position.y=Math.sin(t*9)*.04;fox.tail.rotation.z=Math.sin(t*5)*.3;}
+ if(moving){const step=delta.scale(Math.min(1,dt*3));if(onDock)moveEntity(fox.root,step,.3);else fox.root.position.addInPlace(step);if(fox.sprite)fox.facing.copyFrom(delta).normalize();else fox.root.rotation.y=Math.atan2(delta.x,delta.z);}
+ const footHeight=world.surfaceHeight?.(fox.root.position.x,fox.root.position.z)||0;
+ if(fox.sprite){fox.root.position.y=footHeight;updateActorMotion(fox,fox.sprite,dt,moving,Math.min(1.3,delta.length()/2));}
+ else{fox.root.position.y=footHeight+Math.sin(t*9)*.04;fox.tail.rotation.z=Math.sin(t*5)*.3;}
  petCD-=dt;if(petCD<=0){const e=nearestEnemy(9);if(e){fire(fox.root.position.add(new V(0,.7,0)),e.root.position,8+save.level*2,'#f3c37c',16);petCD=3.5;}}
 }
 function tick(dt){if(mode==='intro'&&titlePaused)dt=0;t+=dt;world?.update(dt,t);if(!hero)return;

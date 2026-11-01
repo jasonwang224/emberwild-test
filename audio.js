@@ -1,5 +1,5 @@
-import {CHIP_TRACKS, THEME_PLAYLISTS, scoreStep} from './chiptune-score.js?v=54d49b7f';
-import {createInstrumentBank, INSTRUMENT_NAMES} from './instrument-bank.js?v=54d49b7f';
+import {CHIP_TRACKS, THEME_PLAYLISTS, scoreStep} from './chiptune-score.js?v=9517e800';
+import {createInstrumentBank, INSTRUMENT_NAMES} from './instrument-bank.js?v=9517e800';
 
 /** Original handheld-inspired compositions and synthesized effects. No recordings or audio downloads. */
 export function createAudio() {
@@ -24,12 +24,15 @@ export function createAudio() {
   const allTracks = Object.keys(CHIP_TRACKS);
   let nextBeat = 0;
   let step = 0;
+  let requestedTheme = theme, pendingTheme = null, queuedTrack = null;
+  let musicLayer = null, outgoingLayer = null, schedulingLayer = null;
+  const CROSSFADE_SECONDS = 1.15;
   let seed = 0x3ea8f12;
   const voices = new Set();
   const pulseWaves = new Map();
   const lastEffect = new Map();
   // Reserve separate headroom so a busy battle never steals the accompaniment.
-  const MUSIC_VOICES = 32;
+  const MUSIC_VOICES = 48; // Two overlapping ensembles, still a fixed budget.
   const EFFECT_VOICES = 40;
   // Legacy combat calls share the same sound and throttle as their named releases.
   const effectAliases = { swing: 'sword-swing', shoot: 'bow-release', fire: 'wand-release' };
@@ -105,8 +108,8 @@ export function createAudio() {
       envelope.gain.linearRampToValueAtTime(Math.max(.0002, volume * (shape === 'chip-flute' ? .85 : .65)), time + duration * .72);
     }
     envelope.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-    oscillator.connect(envelope).connect(route);
-    const voice = { source: oscillator, envelope, route, nodes: [oscillator, envelope] };
+    oscillator.connect(envelope).connect(route === score ? schedulingLayer?.dry || score : route);
+    const voice = { source: oscillator, envelope, route, layer: route === score ? schedulingLayer : null, nodes: [oscillator, envelope] };
     voices.add(voice);
     oscillator.onended = () => release(voice);
     oscillator.start(time);
@@ -172,13 +175,13 @@ export function createAudio() {
       panner.pan.value = Math.max(-.75, Math.min(.75, note.pan ?? profile.pan ?? 0));
       envelope.connect(panner); output = panner; nodes.push(panner);
     }
-    output.connect(score);
+    output.connect(schedulingLayer?.dry || score);
     if (room) {
       const send = context.createGain();
       send.gain.value = note.send ?? profile.send ?? .12;
-      output.connect(send).connect(room); nodes.push(send);
+      output.connect(send).connect(schedulingLayer?.wet || room); nodes.push(send);
     }
-    const voice = {source, envelope, route: score, nodes};
+    const voice = {source, envelope, route: score, layer: schedulingLayer, nodes};
     voices.add(voice); source.onended = () => release(voice);
     source.start(time); source.stop(time + duration + releaseTime + .025);
   }
@@ -200,8 +203,8 @@ export function createAudio() {
     envelope.gain.setValueAtTime(.0001, time);
     envelope.gain.linearRampToValueAtTime(volume, time + .002);
     envelope.gain.exponentialRampToValueAtTime(.0001, time + duration);
-    source.connect(filter).connect(envelope).connect(score);
-    const voice = {source, envelope, route: score, nodes: [source, filter, envelope]};
+    source.connect(filter).connect(envelope).connect(schedulingLayer?.dry || score);
+    const voice = {source, envelope, route: score, layer: schedulingLayer, nodes: [source, filter, envelope]};
     voices.add(voice);source.onended = () => release(voice);
     source.start(time);source.stop(time + duration + .015);
   }
@@ -218,18 +221,41 @@ export function createAudio() {
     }
   }
 
-  function musicalBeat(time, position) {
-    const track = CHIP_TRACKS[trackId], seconds = 60 / track.bpm / 4;
-    const events = scoreStep(trackId, position);
+  function musicalBeat(time, position, id = trackId, layer = musicLayer) {
+    schedulingLayer = layer;
+    const track = CHIP_TRACKS[id], seconds = 60 / track.bpm / 4;
+    const events = scoreStep(id, position);
     for (const note of events.notes) {
       instrumentNote(note, time, Math.max(.025, note.steps * seconds * .88 * (1 - (track.swing || 0))));
     }
     for (const drum of events.drums) chipDrum(drum.kind, time, drum.volume);
+    schedulingLayer = null;
   }
 
   function tick() {
     if (!active || !context || context.state !== 'running' || disposed) return;
     const now = context.currentTime;
+    if (outgoingLayer && now >= outgoingLayer.end) {
+      retireLayer(outgoingLayer);outgoingLayer = null;
+    }
+    if (!outgoingLayer && queuedTrack) {
+      const queued = queuedTrack;queuedTrack = null;
+      if (selection === 'auto') commitTheme(requestedTheme);
+      else changeTrack(queued.id, queued.step);
+    }
+    if (!outgoingLayer && pendingTheme && now >= pendingTheme.at) commitTheme(pendingTheme.theme);
+    if (outgoingLayer) {
+      // Keep the old accompaniment playing under the new melody throughout the
+      // fade. Fading only its last short notes would leave a hole in the music.
+      if (outgoingLayer.nextBeat < now) outgoingLayer.nextBeat = now + .04;
+      let scheduled = 0;
+      while (outgoingLayer.nextBeat < Math.min(now + .16, outgoingLayer.end) && scheduled++ < 3) {
+        const track = CHIP_TRACKS[outgoingLayer.id], position = outgoingLayer.step;
+        musicalBeat(outgoingLayer.nextBeat, position, outgoingLayer.id, outgoingLayer);
+        outgoingLayer.nextBeat += 60 / track.bpm / 4 * (1 + (position % 2 ? -1 : 1) * (track.swing || 0));
+        outgoingLayer.step = (position + 1) % (track.bars * track.stepsPerBar);
+      }
+    }
     // Skip hidden-tab backlog instead of queuing a burst when the tab returns.
     if (nextBeat < now) nextBeat = now + 0.04;
     let scheduled = 0;
@@ -242,14 +268,16 @@ export function createAudio() {
       step++;
       if (step >= track.bars * track.stepsPerBar) {
         step = 0;
-        if (selection === 'auto') {
+        if (selection === 'auto' && THEME_PLAYLISTS[theme][progress[theme].index] === trackId) {
           const cursor = progress[theme];
           cursor.index = (cursor.index + 1) % THEME_PLAYLISTS[theme].length;
           trackId = THEME_PLAYLISTS[theme][cursor.index];
           setTrackColor(nextBeat);
         }
       }
-      if (selection === 'auto') progress[theme].step = step;
+      // A queued Next/Auto choice owns its own cursor; the song still fading
+      // must not overwrite that chosen song's starting position.
+      if (selection === 'auto' && THEME_PLAYLISTS[theme][progress[theme].index] === trackId) progress[theme].step = step;
     }
   }
 
@@ -311,6 +339,7 @@ export function createAudio() {
           if (i % 3 === 0) lfsr = (lfsr >>> 1) | (((lfsr ^ (lfsr >>> 1)) & 1) << 14);
           chipChannel[i] = (lfsr & 1) ? .8 : -.8;
         }
+        musicLayer = createLayer();
         nextBeat = context.currentTime + 0.06;
         timer = globalThis.setInterval(tick, 80);
       }
@@ -328,7 +357,13 @@ export function createAudio() {
     if (!context) return;
     master.gain.cancelScheduledValues(context.currentTime);
     master.gain.setTargetAtTime(active ? 0.48 : 0, context.currentTime, 0.05);
-    if (!active) fadeVoices(false);
+    if (!active) {
+      fadeVoices(false);
+      if (outgoingLayer) { retireLayer(outgoingLayer);outgoingLayer = null; }
+      const queued = queuedTrack;queuedTrack = null;pendingTheme = null;
+      if (selection === 'auto') commitTheme(requestedTheme);
+      else if (queued) changeTrack(queued.id, queued.step);
+    }
     if (active) { nextBeat = context.currentTime + 0.06; tick(); }
   }
 
@@ -506,15 +541,68 @@ export function createAudio() {
     if (scoreFilter) scoreFilter.frequency.setTargetAtTime(CHIP_TRACKS[trackId].filter || 4600, time, .08);
   }
 
+  function createLayer() {
+    const layer = {dry: context.createGain(), wet: room ? context.createGain() : null};
+    layer.dry.connect(score);
+    if (layer.wet) layer.wet.connect(room);
+    layer.dry.gain.value = 1;if (layer.wet) layer.wet.gain.value = 1;
+    return layer;
+  }
+
+  function fadeLayer(layer, incoming, now) {
+    // Matching equal-power curves retain musical energy through the handover;
+    // wet and dry sends follow the same envelope so old reverb cannot jump out.
+    for (const node of [layer.dry, layer.wet]) {
+      if (!node) continue;
+      node.gain.cancelScheduledValues(now);
+      node.gain.setValueAtTime(incoming ? 0 : 1, now);
+      for (let i = 1; i <= 16; i++) {
+        const angle = i / 16 * Math.PI / 2;
+        node.gain.linearRampToValueAtTime(incoming ? Math.sin(angle) : Math.cos(angle), now + i / 16 * CROSSFADE_SECONDS);
+      }
+    }
+  }
+
+  function retireLayer(layer) {
+    for (const voice of [...voices]) if (voice.layer === layer) {
+      try { voice.source.stop(); } catch (_) {}
+      release(voice);
+    }
+    layer.dry.disconnect();layer.wet?.disconnect();
+  }
+
   function changeTrack(id, resumeStep = 0) {
-    fadeVoices();
-    trackId = id;
-    step = resumeStep;
+    // Coalesce rapid song choices while a handover is in progress. At most two
+    // ensembles can overlap, even if the player repeatedly changes their mind.
+    if (outgoingLayer && active && context?.state === 'running') {
+      queuedTrack = {id, step: resumeStep};return;
+    }
+    const crossfade = musicLayer && active && context?.state === 'running';
+    if (crossfade) {
+      outgoingLayer = Object.assign(musicLayer, {id: trackId, step, nextBeat, end: context.currentTime + CROSSFADE_SECONDS});
+      fadeLayer(outgoingLayer, false, context.currentTime);
+      musicLayer = createLayer();fadeLayer(musicLayer, true, context.currentTime);
+    } else if (context) {
+      if (outgoingLayer) { retireLayer(outgoingLayer);outgoingLayer = null; }
+      if (musicLayer) retireLayer(musicLayer);
+      musicLayer = createLayer();
+    }
+    trackId = id;step = resumeStep;
     if (context) {
-      nextBeat = context.currentTime + .08;
+      nextBeat = context.currentTime + .02;
       if (scoreFilter.frequency.cancelAndHoldAtTime) scoreFilter.frequency.cancelAndHoldAtTime(context.currentTime);
       else scoreFilter.frequency.cancelScheduledValues(context.currentTime);
       setTrackColor(context.currentTime);
+    }
+  }
+
+  function commitTheme(target) {
+    pendingTheme = null;
+    const changed = target !== theme;
+    theme = target;
+    if (selection === 'auto') {
+      const cursor = progress[theme], id = THEME_PLAYLISTS[theme][cursor.index];
+      if (changed || trackId !== id) changeTrack(id, cursor.step);
     }
   }
 
@@ -522,7 +610,9 @@ export function createAudio() {
     if (disposed || (value !== 'auto' && !Object.hasOwn(CHIP_TRACKS, value))) return false;
     if (value === selection) return true;
     selection = value;
+    pendingTheme = null;
     if (value === 'auto') {
+      theme = requestedTheme;
       const cursor = progress[theme];
       changeTrack(THEME_PLAYLISTS[theme][cursor.index], cursor.step);
     } else changeTrack(value);
@@ -537,20 +627,23 @@ export function createAudio() {
       cursor.index = (cursor.index + 1) % playlist.length;
       cursor.step = 0;
       changeTrack(playlist[cursor.index]);
-    } else selectMusic(allTracks[(allTracks.indexOf(trackId) + 1) % allTracks.length]);
+    } else selectMusic(allTracks[(allTracks.indexOf(selection) + 1) % allTracks.length]);
   }
 
   function update(nextZone, inCombat) {
     if (disposed) return;
     const place = Object.hasOwn(THEME_PLAYLISTS, nextZone) ? nextZone : 'overworld';
     const target = inCombat && place !== 'title' ? 'combat' : place;
-    if (target !== theme) {
-      theme = target;
-      if (selection === 'auto') {
-        const cursor = progress[theme];
-        changeTrack(THEME_PLAYLISTS[theme][cursor.index], cursor.step);
-      }
+    requestedTheme = target;
+    if (selection !== 'auto' || !active || context?.state !== 'running') {
+      commitTheme(target);return;
     }
+    if (target === theme) { pendingTheme = null;return; }
+    if (pendingTheme?.theme === target) return;
+    // Ignore quick boundary crossings. Enter combat promptly, but let the
+    // battle settle before returning to peaceful music instead of fluttering.
+    const delay = target === 'title' || theme === 'title' ? 0 : target === 'combat' ? .18 : theme === 'combat' ? 2 : .65;
+    pendingTheme = {theme: target, at: context.currentTime + delay};
   }
 
   function dispose() {
@@ -566,6 +659,9 @@ export function createAudio() {
     lastEffect.clear();
     pulseWaves.clear();
     instruments?.dispose();
+    musicLayer?.dry.disconnect();musicLayer?.wet?.disconnect();
+    outgoingLayer?.dry.disconnect();outgoingLayer?.wet?.disconnect();
+    musicLayer = outgoingLayer = schedulingLayer = pendingTheme = queuedTrack = null;
     room?.disconnect();
     context = master = score = scoreFilter = effects = noise = chipNoise = instruments = room = null;
   }
