@@ -1,35 +1,35 @@
-import {enableRightDragOrbit} from './camera-controls.js?v=17317200';
-import {createImpactFeedback} from './impact-effects.js?v=17317200';
-import {createDashTrail} from './dash-trail.js?v=17317200';
-import {createLootBeacon} from './loot-beacon.js?v=17317200';
-import {createLootAppearance} from './loot-appearance.js?v=17317200';
-import {createBossLane} from './boss-lane.js?v=17317200';
-import {chooseTarget,enemyDistance,CREATURE_NAMES} from './targeting.js?v=17317200';
-import {enemyProfile} from './enemy-profile.js?v=17317200';
-import {createBossPresence} from './boss-presence.js?v=17317200';
-import {createWorldLighting,setWorldLighting} from './lighting.js?v=17317200';
-import {createWorld} from './world.js?v=17317200';
-import {normalizeTreeStyle} from './tree-style-options.js?v=17317200';
-import {treeStyleMenuHTML,treeStyleName} from './tree-style-ui.js?v=17317200';
-import {findClearPosition,resolveMovement} from './world-navigation.js?v=17317200';
-import {createAudio} from './audio.js?v=17317200';
-import {CHIP_TRACKS,THEME_PLAYLISTS} from './chiptune-score.js?v=17317200';
-import {createSpriteLibrary} from './sprites.js?v=17317200';
-import {applyCelShading} from './cel.js?v=17317200';
-import {createVillagers} from './villagers.js?v=17317200';
-import {createCampRescues} from './camp-rescues.js?v=17317200';
-import {createTownGuards,GUARD_REACH} from './town-guards.js?v=17317200';
-import {createQuestMarkers} from './quest-markers.js?v=17317200';
-import {QUESTS,questStatus,questObjectives,acceptQuest,claimQuest,recordQuestEvent,setTrackedQuest} from './quests.js?v=17317200';
-import {mainQuestView,sideQuestView,questCardHTML,questObjectiveHTML,questRewardText,questLogHTML,questDialogueHTML,questGiverHTML,trackedQuestInfo,questGiverState as getQuestGiverState} from './quest-ui.js?v=17317200';
-import {createRenderer} from './renderer.js?v=17317200';
-import {bindGameLifecycle} from './game-lifecycle.js?v=17317200';
-import {createCombatVisuals} from './combat-visuals.js?v=17317200';
-import {createPotionAnimation} from './potion-animation.js?v=17317200';
-import {createHealingEffects} from './healing-effects.js?v=17317200';
-import {createTitleScene} from './title-scene.js?v=17317200';
-import {createAbilityEffects,ABILITY_CUES} from './ability-effects.js?v=17317200';
-import {CLASSES,SAVE_KEY,newGame,stats,addXP,xpNeeded,makeLoot,equip,parseSave,questInfo,RARITIES} from './core.js?v=17317200';
+import {enableRightDragOrbit} from './camera-controls.js?v=54d49b7f';
+import {createImpactFeedback} from './impact-effects.js?v=54d49b7f';
+import {createDashTrail} from './dash-trail.js?v=54d49b7f';
+import {createLootBeacon} from './loot-beacon.js?v=54d49b7f';
+import {createLootAppearance} from './loot-appearance.js?v=54d49b7f';
+import {createBossLane} from './boss-lane.js?v=54d49b7f';
+import {chooseTarget,enemyDistance,CREATURE_NAMES} from './targeting.js?v=54d49b7f';
+import {enemyProfile} from './enemy-profile.js?v=54d49b7f';
+import {createBossPresence} from './boss-presence.js?v=54d49b7f';
+import {createWorldLighting,setWorldLighting} from './lighting.js?v=54d49b7f';
+import {createWorld} from './world.js?v=54d49b7f';
+import {normalizeTreeStyle} from './tree-style-options.js?v=54d49b7f';
+import {treeStyleMenuHTML,treeStyleName} from './tree-style-ui.js?v=54d49b7f';
+import {findClearPosition,resolveMovement} from './world-navigation.js?v=54d49b7f';
+import {createAudio} from './audio.js?v=54d49b7f';
+import {CHIP_TRACKS,THEME_PLAYLISTS} from './chiptune-score.js?v=54d49b7f';
+import {createSpriteLibrary} from './sprites.js?v=54d49b7f';
+import {applyCelShading} from './cel.js?v=54d49b7f';
+import {createVillagers} from './villagers.js?v=54d49b7f';
+import {createCampRescues} from './camp-rescues.js?v=54d49b7f';
+import {createTownGuards,GUARD_REACH} from './town-guards.js?v=54d49b7f';
+import {createQuestMarkers} from './quest-markers.js?v=54d49b7f';
+import {QUESTS,questStatus,questObjectives,acceptQuest,claimQuest,recordQuestEvent,setTrackedQuest} from './quests.js?v=54d49b7f';
+import {mainQuestView,sideQuestView,questCardHTML,questObjectiveHTML,questRewardText,questLogHTML,questDialogueHTML,questGiverHTML,trackedQuestInfo,questGiverState as getQuestGiverState} from './quest-ui.js?v=54d49b7f';
+import {createRenderer} from './renderer.js?v=54d49b7f';
+import {bindGameLifecycle} from './game-lifecycle.js?v=54d49b7f';
+import {createCombatVisuals} from './combat-visuals.js?v=54d49b7f';
+import {createPotionAnimation} from './potion-animation.js?v=54d49b7f';
+import {createHealingEffects} from './healing-effects.js?v=54d49b7f';
+import {createTitleScene} from './title-scene.js?v=54d49b7f';
+import {createAbilityEffects,ABILITY_CUES} from './ability-effects.js?v=54d49b7f';
+import {CLASSES,SAVE_KEY,newGame,stats,addXP,xpNeeded,makeLoot,equip,parseSave,questInfo,RARITIES} from './core.js?v=54d49b7f';
 
 const $=id=>document.getElementById(id),B=window.BABYLON,V=B?.Vector3;
 const canvas=$('game'),sound=createAudio();
@@ -41,7 +41,7 @@ const clearedCamps=new Set();
 let saved=null;try{saved=parseSave(localStorage.getItem(SAVE_KEY));}catch{}
 applyAudioMix(saved?.settings??save.settings);
 let treeStyleBusy=false,introWorldReusable=false;
-let titleScene=null,titlePaused=false,titleMusic=false,titleClock=0;
+let titleScene=null,titlePaused=false,titleMusic=saved?.settings.sound??save.settings.sound,titleClock=0;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
@@ -199,7 +199,7 @@ function activateZone(next,spawnMobs=true){
  if(spawnMobs){for(const p of world.spawnPoints)spawnEnemy(p.kind,p.x,p.z,p.level||1,p.campId);if(next==='dungeon')spawnEnemy('boss',0,22,save.ascension+3);}
  $('boss-hud').hidden=true;save.zone=next;
 }
-function start(continuing=false){clearTitleBackdrop();resetCamera();sound.setEnabled(false);sound.unlock();const mix={musicVolume:sound.musicVolume,effectsVolume:sound.effectsVolume};save=continuing&&saved?parseSave(JSON.stringify(saved)):newGame(selectedClass);if(!continuing)Object.assign(save.settings,mix);applyAudioMix(save.settings);selectedClass=save.heroClass;hero.root.dispose();fox.root.dispose();hero=createHero(selectedClass);fox=createFox();
+function start(continuing=false){clearTitleBackdrop();resetCamera();sound.setEnabled(false);sound.unlock();const mix={sound:titleMusic,musicVolume:sound.musicVolume,effectsVolume:sound.effectsVolume};save=continuing&&saved?parseSave(JSON.stringify(saved)):newGame(selectedClass);if(!continuing)Object.assign(save.settings,mix);applyAudioMix(save.settings);selectedClass=save.heroClass;hero.root.dispose();fox.root.dispose();hero=createHero(selectedClass);fox=createFox();
  // Only the untouched title world is reusable. Later restarts need fresh
  // interactables, shrine state and encounters, just as a zone transition does.
  const reuseIntroWorld=introWorldReusable&&zone===save.zone&&save.zone==='overworld';introWorldReusable=false;
@@ -467,6 +467,25 @@ async function changeTreeStyle(value){
 }
 const musicAreaNames={title:'Title',town:'Town',overworld:'Exploration',dungeon:'Dungeon',combat:'Battle'};
 function applyAudioMix(settings){sound.setMusicVolume(settings.musicVolume);sound.setEffectsVolume(settings.effectsVolume);}
+function prepareTitleMusic(){
+ sound.update('title',false);sound.setEnabled(titleMusic);
+ $('title-sound').setAttribute('aria-pressed',String(titleMusic));
+ $('title-sound').setAttribute('aria-label',titleMusic?'Mute title music':'Enable title music');
+ $('title-sound').title=titleMusic?'Music is on · starts with your first click or keypress':'Music is off';
+}
+function bindMusicActivation(){
+ $('title-sound').onclick=()=>musicEnabled(!titleMusic);
+ let pending=false;
+ const activate=event=>{
+  // Bubble after button handlers so the first Mute click stays silent. Touch
+  // clicks and keyboard activation also unlock audio without delaying loading.
+  if(!event.isTrusted||event.repeat||!sound.enabled||sound.unlocked||pending)return;
+  if(event.type==='keydown'&&['Enter','Space'].includes(event.code)&&event.target.closest?.('button'))return;
+  pending=true;sound.unlock().finally(()=>{pending=false;});
+ };
+ window.addEventListener('click',activate);
+ window.addEventListener('keydown',activate);
+}
 function changeAudioVolume(key,percent,commit=false){
  if(!['musicVolume','effectsVolume'].includes(key)||!Number.isFinite(percent))return;
  const value=clamp(percent/100,0,1);
@@ -483,27 +502,27 @@ function musicMixerHTML(){
 }
 function musicEnabled(enabled=true){
  if(mode==='intro'){
-  titleMusic=enabled;sound.update('title',false);
-  $('title-sound').setAttribute('aria-pressed',String(enabled));
-  $('title-sound').setAttribute('aria-label',enabled?'Mute title music':'Enable title music');
+  titleMusic=enabled;save.settings.sound=enabled;prepareTitleMusic();
+  // Change only sound preferences, never replace an adventure with its preview.
+  if(saved){saved.settings.sound=enabled;try{localStorage.setItem(SAVE_KEY,JSON.stringify(saved));}catch{}}
  }else{save.settings.sound=enabled;updateHUD();persist();}
  sound.setEnabled(enabled);if(enabled)sound.unlock();
 }
 function musicLibrary(focusAction=''){
  const current=sound.currentTrack,selection=sound.musicSelection,scroll=$('modal-content').scrollTop;
  const groups=Object.entries(THEME_PLAYLISTS).map(([area,ids])=>`<section class="music-track-group"><h3>${musicAreaNames[area]||esc(area)}</h3><div class="music-track-grid">${ids.map(id=>{const track=CHIP_TRACKS[id];return `<button type="button" class="music-track${current.id===id&&sound.enabled?' playing':''}" data-action="music-select:${esc(id)}" data-music-id="${esc(id)}" aria-label="Play ${esc(track.title)}" aria-pressed="${selection===id}"><span class="music-track-heading"><b>${esc(track.title)}</b><span class="music-play-indicator" aria-hidden="true">▶</span></span><small>${esc(track.description)}</small></button>`;}).join('')}</div></section>`).join('');
- openModal(`<section class="music-library" data-music-library><div class="eyebrow">THE EMBERWILD SONGBOOK</div><h2 class="modal-title">A tune for every trail.</h2><p class="music-library-intro">Original instrumental music with woodwinds, strings, brass, mallets, bass, and percussion. Choose a song now, or let the soundtrack follow your adventure.</p><div class="music-player"><small data-music-state>${sound.enabled?'NOW PLAYING':'MUSIC PAUSED'}</small><strong data-music-title>${esc(current.title)}</strong><p data-music-description>${esc(current.description)}</p><div class="music-player-actions"><button type="button" class="secondary" data-action="music-toggle">${sound.enabled?'Mute music':'Play music'}</button><button type="button" class="secondary" data-action="music-next">Next tune →</button></div></div>${musicMixerHTML()}<button type="button" class="music-auto" data-action="music-select:auto" aria-pressed="${selection==='auto'}"><b>Automatic · follow the adventure</b><small>Switches with your surroundings and rotates the songs in each area.</small></button>${groups}<div class="music-library-footer"><p>Choosing a song keeps it playing until you select another or return to Automatic. This choice lasts for this visit.</p><button type="button" class="secondary" data-action="music-back">${mode==='intro'?'Back to the title screen':'Back to settings'}</button></div></section>`);
+ openModal(`<section class="music-library" data-music-library><div class="eyebrow">THE EMBERWILD SONGBOOK</div><h2 class="modal-title">A tune for every trail.</h2><p class="music-library-intro">Original instrumental music with woodwinds, strings, brass, mallets, bass, and percussion. Choose a song now, or let the soundtrack follow your adventure.</p><div class="music-player"><small data-music-state>${sound.enabled?(sound.unlocked?'NOW PLAYING':'MUSIC READY'):'MUSIC PAUSED'}</small><strong data-music-title>${esc(current.title)}</strong><p data-music-description>${esc(current.description)}</p><div class="music-player-actions"><button type="button" class="secondary" data-action="music-toggle">${sound.enabled?'Mute music':'Play music'}</button><button type="button" class="secondary" data-action="music-next">Next tune →</button></div></div>${musicMixerHTML()}<button type="button" class="music-auto" data-action="music-select:auto" aria-pressed="${selection==='auto'}"><b>Automatic · follow the adventure</b><small>Switches with your surroundings and rotates the songs in each area.</small></button>${groups}<div class="music-library-footer"><p>Choosing a song keeps it playing until you select another or return to Automatic. This choice lasts for this visit.</p><button type="button" class="secondary" data-action="music-back">${mode==='intro'?'Back to the title screen':'Back to settings'}</button></div></section>`);
  syncMusicStatus();
  if(focusAction){const button=[...$('modal-content').querySelectorAll('[data-action]')].find(el=>el.dataset.action===focusAction);button?.focus({preventScroll:true});$('modal-content').scrollTop=scroll;}
 }
 function syncMusicStatus(){
  if($('modal').hidden)return;
  const panel=$('modal-content').querySelector('[data-music-library]');if(!panel)return;
- const track=sound.currentTrack,selection=sound.musicSelection,key=track.id+'|'+selection+'|'+sound.enabled+'|'+sound.musicVolume+'|'+sound.effectsVolume;
+ const track=sound.currentTrack,selection=sound.musicSelection,key=track.id+'|'+selection+'|'+sound.enabled+'|'+sound.unlocked+'|'+sound.musicVolume+'|'+sound.effectsVolume;
  if(panel.dataset.musicStatus===key)return;panel.dataset.musicStatus=key;
  panel.querySelector('[data-music-title]').textContent=track.title;
  panel.querySelector('[data-music-description]').textContent=track.description;
- panel.querySelector('[data-music-state]').textContent=sound.enabled?'NOW PLAYING':'MUSIC PAUSED';
+ panel.querySelector('[data-music-state]').textContent=sound.enabled?(sound.unlocked?'NOW PLAYING':'MUSIC READY'):'MUSIC PAUSED';
  panel.querySelector('[data-action="music-toggle"]').textContent=sound.enabled?'Mute music':'Play music';
  for(const name of ['musicVolume','effectsVolume']){
   const percent=Math.round(sound[name]*100),input=panel.querySelector(`[data-audio-volume="${name}"]`);
@@ -581,7 +600,7 @@ function modalAction(action){
  if(action==='sound'){toggleSound();settings();}
  if(action==='auto'){save.settings.autoAttack=!save.settings.autoAttack;settings();}
  if(action==='quality'){save.settings.quality=save.settings.quality==='low'?'high':'low';applyQuality();settings();}
- if(action==='title'){persist();closeModal();mode='intro';resetDynamics();if(zone!=='overworld')buildZone('overworld',false);setupTitleBackdrop();$('hud').hidden=true;$('intro').hidden=false;$('continue-button').hidden=false;$('continue-button').textContent=`Continue · Level ${saved.level} ${CLASSES[saved.heroClass].name}`;titleMusic=false;$('title-sound').setAttribute('aria-pressed','false');$('title-sound').setAttribute('aria-label','Enable title music');sound.setEnabled(false);}
+ if(action==='title'){persist();closeModal();mode='intro';resetDynamics();if(zone!=='overworld')buildZone('overworld',false);setupTitleBackdrop();$('hud').hidden=true;$('intro').hidden=false;$('continue-button').hidden=false;$('continue-button').textContent=`Continue · Level ${saved.level} ${CLASSES[saved.heroClass].name}`;titleMusic=save.settings.sound;prepareTitleMusic();}
  updateHUD();persist();
 }
 function applyQuality(){const low=save.settings.quality==='low';scene.shadowsEnabled=!low;engine.setHardwareScalingLevel(low?1.8:Math.max(1,devicePixelRatio/1.4));resize();}
@@ -679,7 +698,6 @@ function tick(dt){if(mode==='intro'&&titlePaused)dt=0;t+=dt;world?.update(dt,t);
 }
 function bind(){
  document.querySelectorAll('[data-title-action]').forEach(btn=>btn.onclick=()=>titleMenu(btn.dataset.titleAction));
- $('title-sound').onclick=()=>{titleMusic=!titleMusic;sound.update('title',false);sound.unlock();sound.setEnabled(titleMusic);$('title-sound').setAttribute('aria-pressed',String(titleMusic));$('title-sound').setAttribute('aria-label',titleMusic?'Mute title music':'Enable title music');};
  $('title-library').onclick=()=>musicLibrary();
  $('title-pause').onclick=()=>{titlePaused=!titlePaused;$('title-pause').setAttribute('aria-pressed',String(titlePaused));$('title-pause').setAttribute('aria-label',titlePaused?'Resume animated backdrop':'Pause animated backdrop');$('title-pause').textContent=titlePaused?'▶':'Ⅱ';};
 
@@ -702,4 +720,5 @@ function bind(){
  canvas.addEventListener('pointerdown',e=>{if(mode!=='play'||paused||e.pointerType==='touch'||e.button>0)return;canvas.focus();const rect=canvas.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top,bodyTarget=largeEnemyAtPointer(x,y);if(bodyTarget){preferredTarget=bodyTarget;if(enemyDistance(bodyTarget,hero.root.position)<CLASSES[save.heroClass].range)attack();else clickTarget=bodyTarget.root.position.clone();return;}const pick=scene.pick(x,y,m=>m.metadata?.ground===true);if(pick?.hit){const point=pick.pickedPoint;const en=enemies.find(f=>dist(f.root.position,point)<f.profile.selectionRadius);if(en){preferredTarget=en;if(enemyDistance(en,hero.root.position)<CLASSES[save.heroClass].range)attack();else clickTarget=new V(point.x,0,point.z);}else{preferredTarget=null;clickTarget=new V(point.x,0,point.z);}}});
  const stick=$('stick');let pointer=null;const reset=()=>{pointer=null;touch.x=touch.z=0;$('knob').style.transform='';};const movement=e=>{const r=stick.getBoundingClientRect();let x=(e.clientX-r.left-r.width/2)/(r.width*.35),z=-(e.clientY-r.top-r.height/2)/(r.height*.35);const len=Math.hypot(x,z);if(len>1){x/=len;z/=len;}touch.x=x;touch.z=z;$('knob').style.transform=`translate(${x*25}px,${-z*25}px)`;};stick.onpointerdown=e=>{pointer=e.pointerId;stick.setPointerCapture(pointer);movement(e);};stick.onpointermove=e=>{if(e.pointerId===pointer)movement(e);};stick.onpointerup=reset;stick.onpointercancel=reset;
 }
+prepareTitleMusic();bindMusicActivation();
 boot();

@@ -1,4 +1,4 @@
-import {TREE_STYLE_OPTIONS,normalizeTreeStyle} from './tree-style-options.js?v=17317200';
+import {TREE_STYLE_OPTIONS,normalizeTreeStyle} from './tree-style-options.js?v=54d49b7f';
 
 export function treeStyleName(id){return TREE_STYLE_OPTIONS.find(style=>style.id===normalizeTreeStyle(id))?.name||'Current painted clusters';}
 export function treeStyleMenuHTML(id,{busy=false,error='',dungeon=false}={}) {

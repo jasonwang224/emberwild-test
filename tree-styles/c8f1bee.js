@@ -1,6 +1,6 @@
 // Tree-only reconstruction of saved revision c8f1bee. Original procedural geometry and surface paint.
-import {applyCelShading} from './cel-c8f1bee.js?v=17317200';
-import {finishHistoricalBatch,scopeHistoricalStyle,assertTreeBuildActive} from './runtime.js?v=17317200';
+import {applyCelShading} from './cel-c8f1bee.js?v=54d49b7f';
+import {finishHistoricalBatch,scopeHistoricalStyle,assertTreeBuildActive} from './runtime.js?v=54d49b7f';
 
 export async function build(B,scene,options={}) {
   const root=new B.TransformNode('tree-style-c8f1bee',scene);root.setEnabled(false);if(options.parent)root.parent=options.parent;

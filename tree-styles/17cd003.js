@@ -1,7 +1,7 @@
 // Tree-only reconstruction of saved revision 17cd003. Original procedural geometry and surface paint.
-import {applyCelShading} from './cel-c8f1bee.js?v=17317200';
-import {finishHistoricalBatch,scopeHistoricalStyle,assertTreeBuildActive} from './runtime.js?v=17317200';
-import {installCanopyWind,CANOPY_WIND_PADDING} from '../canopy-wind.js?v=17317200';
+import {applyCelShading} from './cel-c8f1bee.js?v=54d49b7f';
+import {finishHistoricalBatch,scopeHistoricalStyle,assertTreeBuildActive} from './runtime.js?v=54d49b7f';
+import {installCanopyWind,CANOPY_WIND_PADDING} from '../canopy-wind.js?v=54d49b7f';
 const TREE_PALETTES={
   moss:['#315e42','#659145','#b4ce71'],
   sage:['#40684d','#83a66d','#c1d38b'],
